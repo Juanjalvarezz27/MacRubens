@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Anton } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,9 +12,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Importamos la nueva fuente Anton
+const anton = Anton({
+  weight: '400',
+  subsets: ["latin"],
+  variable: "--font-anton",
+});
+
 export const metadata: Metadata = {
-  title: "MacRubens",
-  description: "Pizzeria",
+  title: "Rubens Pizzeria",
+  description: "Sistema de gestión",
 };
 
 export default function RootLayout({
@@ -24,10 +31,12 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="es"
+      className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#F6E4C9]">
+        {children}
+      </body>
     </html>
   );
 }
