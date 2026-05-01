@@ -29,6 +29,11 @@ export default function LoginPage() {
         toast.error(res.error); 
       } else if (res?.ok) {
         toast.success("¡Bienvenido a MacRubens!");
+        
+        // Refrescamos el estado del App Router para que lea la nueva cookie
+        router.refresh(); 
+        
+        // Empujamos al usuario adentro del sistema
         router.push("/home");
       }
     } catch (err) {
