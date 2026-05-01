@@ -38,17 +38,17 @@ export default function RootLayout({
         
         {/* Contenedor Global de Alertas */}
         <ToastContainer 
-            position="top-center"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-            toastClassName={`${poppins.className} !rounded-[1.5rem] !overflow-hidden shadow-xl border border-slate-200 text-sm font-medium !mx-4 !mt-6 sm:!mx-auto !w-[calc(100%-2rem)] sm:!w-auto sm:!min-w-[320px] text-slate-700`}
+          position="top-center"
+          autoClose={2000} 
+          hideProgressBar={true} 
+          newestOnTop={true}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+          toastClassName={`${poppins.className} !rounded-[2rem] !overflow-hidden shadow-[0_25px_50px_-12px_rgba(41,76,41,0.25)] border border-[#294C29]/10 bg-white/95 backdrop-blur-xl text-sm font-black tracking-wide !mx-4 !mt-12 sm:!mx-auto !w-[calc(100%-2rem)] sm:!w-auto sm:!min-w-[350px] text-[#294C29] !px-4 !py-3 transition-all duration-300`}
         />
       </body>
     </html>
