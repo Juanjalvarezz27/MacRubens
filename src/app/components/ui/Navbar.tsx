@@ -9,12 +9,11 @@ import {
   Menu, X, Pizza, Users, Settings, 
   Wallet, BarChart3, LineChart, LogOut, UserCircle 
 } from "lucide-react";
-// Importamos nuestro nuevo Modal
 import ConfirmModal from "../../components/ui/ConfirmModal";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false); // Estado para el modal
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const pathname = usePathname();
 
   const navLinks = [
@@ -26,19 +25,18 @@ export default function Navbar() {
     { name: "Cierre Diario", href: "/home/cierre", icon: Wallet },
   ];
 
-  // Función para ejecutar el logout real
   const handleLogout = () => {
     signOut({ callbackUrl: "/" });
   };
 
   return (
     <>
-      <nav className="bg-[#294C29] text-[#F6E4C9] shadow-[0_10px_30px_rgba(27,54,27,0.4)] sticky top-0 z-50">
+      <nav className="bg-[#294C29] text-[#F6E4C9] shadow-2xl sticky top-0 z-50">
         <div className="w-full px-4 md:px-8">
           <div className="flex items-center justify-between h-24">
             
             {/* LOGO Y MARCA */}
-            <Link href="/home" className="flex items-center gap-3 transform transition-transform hover:scale-105 active:scale-95">
+            <Link href="/home" className="flex items-center gap-3 transition-transform hover:scale-105 active:scale-95">
               <div className="relative w-14 h-14 drop-shadow-md">
                 <Image 
                   src="/Logo.png" 
@@ -52,13 +50,13 @@ export default function Navbar() {
                 <span className="text-2xl leading-none tracking-wider text-[#F6E4C9]" style={{ fontFamily: 'var(--font-anton)' }}>
                   RUBEN'S
                 </span>
-                <span className="text-[0.65rem] font-bold tracking-[0.3em] text-[#E7AF67] uppercase">
+                <span className="text-[0.65rem] font-bold tracking-widest text-[#E7AF67] uppercase">
                   Pizzeria
                 </span>
               </div>
             </Link>
 
-            {/* MENÚ DESKTOP (Pantallas grandes) */}
+            {/* MENÚ DESKTOP */}
             <div className="hidden xl:flex items-center space-x-2">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
@@ -67,9 +65,9 @@ export default function Navbar() {
                   <Link
                     key={link.name}
                     href={link.href}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 ${
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-4xl font-bold text-sm transition-all duration-200 ${
                       isActive 
-                        ? "bg-[#B43E17] text-[#F6E4C9] shadow-[inset_0_-2px_0_rgba(0,0,0,0.2)]" 
+                        ? "bg-[#B43E17] text-[#F6E4C9] shadow-inner" 
                         : "hover:bg-[#1B361B] hover:text-[#E7AF67]"
                     }`}
                   >
@@ -90,19 +88,19 @@ export default function Navbar() {
                 Perfil
               </Link>
               <button
-                onClick={() => setIsLogoutModalOpen(true)} // Abrimos el modal en lugar de salir directo
-                className="flex items-center gap-2 bg-[#F6E4C9] text-[#9F280A] hover:bg-[#EADDCA] px-4 py-2 rounded-2xl font-black text-sm transition-all shadow-[0_4px_0_#D9C3A3] active:shadow-[0_0px_0_#D9C3A3] active:translate-y-1"
+                onClick={() => setIsLogoutModalOpen(true)}
+                className="flex items-center gap-2 bg-[#F6E4C9] text-[#9F280A] hover:bg-[#EADDCA] px-4 py-2 rounded-4xl font-black text-sm transition-all shadow-md active:shadow-none active:translate-y-1"
               >
                 <LogOut className="w-4 h-4" />
                 Salir
               </button>
             </div>
 
-            {/* BOTÓN HAMBURGUESA (Móvil y Tablets) */}
+            {/* BOTÓN HAMBURGUESA */}
             <div className="xl:hidden flex items-center">
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 rounded-2xl bg-[#1B361B] text-[#F6E4C9] hover:text-[#E7AF67] focus:outline-none focus:ring-2 focus:ring-[#E7AF67] transition-colors"
+                className="p-2 rounded-4xl bg-[#1B361B] text-[#F6E4C9] hover:text-[#E7AF67] focus:outline-none focus:ring-2 focus:ring-[#E7AF67] transition-colors"
               >
                 {isOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
               </button>
@@ -112,7 +110,7 @@ export default function Navbar() {
 
         {/* MENÚ MÓVIL */}
         <div 
-          className={`xl:hidden absolute top-24 left-0 w-full bg-[#294C29] border-t border-[#1B361B] shadow-[0_20px_30px_rgba(0,0,0,0.5)] transition-all duration-300 origin-top overflow-y-auto ${
+          className={`xl:hidden absolute top-24 left-0 w-full bg-[#294C29] border-t border-[#1B361B] shadow-2xl transition-all duration-300 origin-top overflow-y-auto ${
             isOpen ? "max-h-[85vh] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
@@ -125,7 +123,7 @@ export default function Navbar() {
                   key={link.name}
                   href={link.href}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold text-base transition-colors ${
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-4xl font-bold text-base transition-colors ${
                     isActive 
                       ? "bg-[#B43E17] text-[#F6E4C9]" 
                       : "hover:bg-[#1B361B] text-[#F6E4C9]"
@@ -142,7 +140,7 @@ export default function Navbar() {
             <Link
               href="/home/perfil"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold text-base hover:bg-[#1B361B] text-[#F6E4C9]"
+              className="flex items-center gap-3 px-4 py-3.5 rounded-4xl font-bold text-base hover:bg-[#1B361B] text-[#F6E4C9]"
             >
               <UserCircle className="w-5 h-5 text-[#E7AF67]" />
               Perfil
@@ -150,10 +148,10 @@ export default function Navbar() {
             
             <button
               onClick={() => {
-                setIsOpen(false); // Cerramos el menú móvil
-                setIsLogoutModalOpen(true); // Y abrimos el modal
+                setIsOpen(false);
+                setIsLogoutModalOpen(true);
               }}
-              className="w-full mt-2 flex items-center justify-center gap-2 bg-[#F6E4C9] text-[#9F280A] px-4 py-4 rounded-2xl font-black text-base active:bg-[#EADDCA] transition-colors shadow-inner"
+              className="w-full mt-2 flex items-center justify-center gap-2 bg-[#F6E4C9] text-[#9F280A] px-4 py-4 rounded-4xl font-black text-base active:bg-[#EADDCA] transition-colors shadow-inner"
             >
               <LogOut className="w-5 h-5" />
               Cerrar Sesión
@@ -162,7 +160,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Renderizamos el Modal fuera del <nav> pero dentro del fragmento */}
       <ConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}

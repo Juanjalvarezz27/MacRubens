@@ -11,7 +11,7 @@ export default function HomeLayout({
       <Navbar />
       
       {/* Contenedor principal responsive para las vistas */}
-      <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+      <main className="flex-1 mx-auto w-full">
         {children}
       </main>
     </div>
