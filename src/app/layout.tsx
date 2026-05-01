@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Anton } from "next/font/google";
+import { Poppins, Anton } from "next/font/google";
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css"; 
+import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// 1. Configuramos Poppins como nuestra nueva fuente premium para el sistema
+const poppins = Poppins({
+  weight: ['400', '500', '600', '700', '800', '900'],
   subsets: ["latin"],
+  variable: "--font-poppins",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
+// 2. Mantenemos Anton solo para los títulos y la marca
 const anton = Anton({
   weight: '400',
   subsets: ["latin"],
@@ -21,7 +19,7 @@ const anton = Anton({
 });
 
 export const metadata: Metadata = {
-  title: "Rubens Pizzeria",
+  title: "Ruben's Pizzeria",
   description: "Sistema de gestión y punto de venta",
 };
 
@@ -33,13 +31,13 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
+      className={`${poppins.variable} ${anton.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#F6E4C9]">
+      <body className={`${poppins.className} min-h-full flex flex-col bg-[#F6E4C9]`}>
         {children}
         
         {/* Contenedor Global de Alertas */}
-            <ToastContainer 
+        <ToastContainer 
             position="top-center"
             autoClose={3000}
             hideProgressBar={false}
@@ -50,7 +48,7 @@ export default function RootLayout({
             draggable
             pauseOnHover
             theme="light"
-            toastClassName="!rounded-[1.5rem] !overflow-hidden shadow-xl border border-slate-200 font-sans text-sm font-medium !mx-4 !mt-6 sm:!mx-auto !w-[calc(100%-2rem)] sm:!w-auto sm:!min-w-[320px] text-slate-700"
+            toastClassName={`${poppins.className} !rounded-[1.5rem] !overflow-hidden shadow-xl border border-slate-200 text-sm font-medium !mx-4 !mt-6 sm:!mx-auto !w-[calc(100%-2rem)] sm:!w-auto sm:!min-w-[320px] text-slate-700`}
         />
       </body>
     </html>
