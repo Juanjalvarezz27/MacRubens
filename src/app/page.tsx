@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { toast } from "react-toastify";
 import { User, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,28 +13,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+      const res = await signIn("credentials", {
+        redirect: false,
+        username,
+        password,
       });
 
-      if (res.ok) {
+      if (res?.error) {
+        toast.error(res.error); 
+      } else if (res?.ok) {
+        toast.success("¡Bienvenido a MacRubens!");
         router.push("/home");
-      } else {
-        const data = await res.json();
-        setError(data.message || "Credenciales incorrectas");
       }
     } catch (err) {
-      setError("Error de conexión con el servidor");
+      toast.error("Error crítico de conexión.");
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,6 @@ export default function LoginPage() {
           
           {/* Logo y Encabezados Limpios */}
           <div className="flex flex-col items-center mb-10">
-            {/* Contenedor del Logo */}
             <div className="w-28 h-28 mb-4 relative drop-shadow-[0_15px_15px_rgba(0,0,0,0.4)] transform transition-transform duration-300 hover:scale-105">
               <Image 
                 src="/Logo.png" 
@@ -62,7 +61,6 @@ export default function LoginPage() {
               />
             </div>
             
-            {/* Títulos con tipografía moderna (Geist Sans) */}
             <div className="text-center flex flex-col items-center">
               <h1 className="text-4xl font-black text-[#F6E4C9] tracking-wider uppercase leading-none drop-shadow-lg">
                 Ruben's
@@ -72,13 +70,6 @@ export default function LoginPage() {
               </h2>
             </div>
           </div>
-
-          {/* Mensaje de Error */}
-          {error && (
-            <div className="bg-linear-to-r from-[#9F280A] to-[#B43E17] text-[#F6E4C9] text-sm font-bold p-4 rounded-2xl mb-6 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] text-center animate-bounce">
-              {error}
-            </div>
-          )}
 
           {/* Formulario */}
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -111,7 +102,6 @@ export default function LoginPage() {
                 required
                 className="w-full bg-[#EADDCA] text-[#294C29] font-bold placeholder:text-[#294C29]/40 rounded-3xl pl-14 pr-14 py-4 focus:outline-none focus:bg-[#F6E4C9] focus:ring-2 focus:ring-[#E7AF67] shadow-[inset_0_6px_10px_rgba(27,54,27,0.3),inset_0_1px_2px_rgba(0,0,0,0.2),0_1px_0_rgba(255,255,255,0.1)] transition-all"
               />
-              {/* Botón del Ojito */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
