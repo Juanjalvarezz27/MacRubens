@@ -2,27 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-// 1. Definición de accesos para la Pizzería
-// Nota: Aunque tu esquema actual no tiene "rol", lo dejo estructurado 
-// para que cuando lo agregues (ej. Administrador vs Personal) no rompa nada.
-const routePermissions: Record<string, string[]> = {
-  "/home/configuracion": ["Administrador"],
-  "/home/estadisticas": ["Administrador"],
-  "/home/usuarios": ["Administrador"],
-  // Rutas generales
-  "/home": ["Administrador"],
-};
-
-const apiPermissions: Record<string, string[]> = {
-  "/api/menu": ["Administrador"], // Solo admin cambia precios
-  "/api/usuarios": ["Administrador"],
-  "/api/pedidos": ["Administrador"],
-};
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // A. EXCEPCIONES: Archivos estáticos y Auth
+  // 1. EXCEPCIONES: Archivos estáticos, Login y NextAuth
   if (
     pathname.startsWith("/_next") || 
     pathname.startsWith("/api/auth") ||
@@ -32,57 +15,33 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // B. OBTENER SESIÓN (JWT)
+  // 2. OBTENER SESIÓN
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  // C. PROTECCIÓN: SI NO HAY TOKEN
+  // 3. SI NO HAY SESIÓN ACTIVA (No Autorizado)
   if (!token) {
-    // Si intenta acceder a la API sin sesión, devolvemos JSON 401
+    // Si un componente intenta hacer fetch a la API sin estar logueado
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión." }, 
         { status: 401 }
       );
     }
-    // Si es una vista, redirigimos al Login (página raíz)
+    // Si intenta entrar a una vista como /home/configuracion
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // D. PROTECCIÓN DE ROLES (Opcional pero robusto)
-  // Extraemos el rol del token (por defecto si no tienes roles, puedes saltar esto o usar "Administrador")
-  const userRole = (token.rol as string) || "Administrador"; 
-
-  // Verificar APIs
-  if (pathname.startsWith("/api/")) {
-    for (const [route, roles] of Object.entries(apiPermissions)) {
-      if (pathname.startsWith(route) && !roles.includes(userRole)) {
-        return NextResponse.json(
-          { error: "Permisos insuficientes para esta acción técnica." }, 
-          { status: 403 }
-        );
-      }
-    }
-  }
-
-  // Verificar Vistas (Frontend)
-  for (const [route, roles] of Object.entries(routePermissions)) {
-    if (pathname.startsWith(route) && !roles.includes(userRole)) {
-      // Si no tiene permiso para una vista específica, lo mandamos al inicio del home
-      return NextResponse.redirect(new URL("/home", request.url));
-    }
-  }
-
+  // 4. SI HAY SESIÓN: Pase libre a todo el sistema
   return NextResponse.next();
 }
 
-// 2. MATCHER: Filtro de rutas que disparan este middleware
+// 5. MATCHERS: ¿Qué rutas vigila este middleware?
 export const config = {
   matcher: [
-
-    "/home/:path*",
-    "/api/((?!auth).*)",
+    "/home/:path*",      // Protege todo el panel administrativo
+    "/api/((?!auth).*)"  // Protege toda la API excepto el login
   ],
 };

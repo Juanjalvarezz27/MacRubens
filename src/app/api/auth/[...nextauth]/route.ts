@@ -1,9 +1,12 @@
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import prisma from "../../../../lib/prisma";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-const handler = NextAuth({
+// Instanciación directa y limpia, tal como en tu sistema de ejemplo
+const prisma = new PrismaClient();
+
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -21,11 +24,12 @@ const handler = NextAuth({
           where: { username: credentials.username }
         });
 
-        // 2. Si no existe o está inactivo
+        // 2. Validaciones de existencia y borrado lógico
         if (!user) {
           throw new Error("Este usuario no existe en el sistema.");
         }
-        if (!user.activo) {
+        
+        if (user.activo === false) {
           throw new Error("Este usuario ha sido desactivado.");
         }
 
@@ -36,7 +40,7 @@ const handler = NextAuth({
           throw new Error("Contraseña incorrecta. Intenta de nuevo.");
         }
 
-        // 4. Si todo está bien, retornamos los datos básicos para la sesión
+        // 4. Retornamos la data
         return {
           id: user.id,
           name: user.nombre,
@@ -46,14 +50,13 @@ const handler = NextAuth({
     })
   ],
   pages: {
-    signIn: "/", // Le decimos a NextAuth que nuestra vista de login es la raíz
+    signIn: "/", // La raíz es el login
   },
   session: {
     strategy: "jwt",
-    maxAge: 12 * 60 * 60, // La sesión durará 12 horas (un turno completo)
+    maxAge: 12 * 60 * 60, // Turno completo de 12 horas
   },
   callbacks: {
-    // Aquí guardamos el ID en el token para poder usarlo luego en las ventas
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -62,14 +65,16 @@ const handler = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (token && session.user) {
         (session.user as any).id = token.id;
-        (session.user as any).username = token.username;
+        (session.user as any).username = token.username as string;
       }
       return session;
     }
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
