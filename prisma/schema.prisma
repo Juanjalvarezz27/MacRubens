@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// TABLAS CATÁLOGO / DICCIONARIO
+// ==========================================
+
+model CategoriaProducto {
+  id        String     @id @default(cuid())
+  nombre    String    
+  productos Producto[]
+}
+
+model EstadoPedido {
+  id      String   @id @default(cuid())
+  nombre  String   @unique 
+  pedidos Pedido[]
+}
+
+model MetodoPago {
+  id      String   @id @default(cuid())
+  nombre  String   @unique 
+  pagos   Pago[]
+}
+
+// ==========================================
+// TABLAS PRINCIPALES
+// ==========================================
+
+model Usuario {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // Aquí guardaremos el hash de la clave
+  nombre    String
+  pedidos   Pedido[]
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cliente {
+  id        String   @id @default(cuid())
+  cedula    String   @unique // Clave para autocompletar en caja
+  nombre    String
+  telefono  String?
+  pedidos   Pedido[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Producto {
+  id            String            @id @default(cuid())
+  nombre        String
+  descripcion   String?
+  precioBase    Float             // Precio general (USD)
+  precioPequena Float?            // Precio especial si la base es "Pequeña" (USD)
+  categoriaId   String
+  categoria     CategoriaProducto @relation(fields: [categoriaId], references: [id])
+  activo        Boolean           @default(true)
+  detalles      DetallePedido[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model Pedido {
+  id             String         @id @default(cuid())
+  clienteId      String
+  cliente        Cliente        @relation(fields: [clienteId], references: [id])
+  usuarioId      String
+  usuario        Usuario        @relation(fields: [usuarioId], references: [id])
+  estadoId       String
+  estado         EstadoPedido   @relation(fields: [estadoId], references: [id])
+  totalUSD       Float
+  totalVES       Float
+  tasaBCV        Float          
+  detalles       DetallePedido[]
+  pagos          Pago[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model DetallePedido {
+  id             String   @id @default(cuid())
+  pedidoId       String
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId     String
+  producto       Producto @relation(fields: [productoId], references: [id])
+  cantidad       Int      @default(1)
+  precioUnitario Float    // Precio histórico al momento de facturar
+  subtotal       Float
+}
+
+model Pago {
+  id           String     @id @default(cuid())
+  pedidoId     String
+  pedido       Pedido     @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  metodoPagoId String
+  metodo       MetodoPago @relation(fields: [metodoPagoId], references: [id])
+  montoUSD     Float      // Equivalente en dólares de este pago
+  montoVES     Float?     // Monto en bolívares (si usó pago móvil/punto)
+  referencia   String?    // Referencia de la transferencia o punto
+  createdAt    DateTime   @default(now())
+}
