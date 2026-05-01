@@ -42,6 +42,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/home/:path*",      // Protege todo el panel administrativo
-    "/api/((?!auth).*)"  // Protege toda la API excepto el login
+    "/api/((?!auth).*)"  // Protege toda la API excepto el logi
   ],
 };
