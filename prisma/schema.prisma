@@ -94,14 +94,18 @@ model Pedido {
 }
 
 model DetallePedido {
-  id             String   @id @default(cuid())
-  pedidoId       String
-  pedido         Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  productoId     String
-  producto       Producto @relation(fields: [productoId], references: [id])
-  cantidad       Int      @default(1)
-  precioUnitario Float    // Precio histórico al momento de facturar
-  subtotal       Float
+  id              String   @id @default(cuid())
+  pedidoId        String
+  pedido          Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId      String
+  producto        Producto @relation(fields: [productoId], references: [id])
+  cantidad        Int      @default(1)
+  precioUnitario  Float    // Precio histórico al momento de facturar
+  subtotal        Float
+
+  parentDetalleId String?
+  parentDetalle   DetallePedido?  @relation("PizzaToppings", fields: [parentDetalleId], references: [id])
+  subDetalles     DetallePedido[] @relation("PizzaToppings")
 }
 
 model Pago {

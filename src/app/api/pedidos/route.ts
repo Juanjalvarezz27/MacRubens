@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Falta el método de pago" }, { status: 400 });
     }
 
-    // MAGIA DE ZONA HORARIA: Forzamos la hora exacta de Venezuela
+    // Forzamos la hora exacta de Venezuela para evitar desfases en Vercel
     const now = new Date();
     const venezuelaTimeString = now.toLocaleString("en-US", { timeZone: "America/Caracas" });
     const venezuelaDate = new Date(venezuelaTimeString);
@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
       });
       if (!estado) throw new Error("El estado 'Completado' no existe en la base de datos.");
 
-      // Insertamos la fecha forzada en el Pedido
       const pedido = await tx.pedido.create({
         data: {
           clienteId: clienteDb.id,
@@ -53,35 +52,37 @@ export async function POST(req: NextRequest) {
           totalUSD: totalUSD,
           totalVES: totalVES,
           tasaBCV: tasaBCV,
-          createdAt: venezuelaDate, // Sobrescribimos el default(now()) de Prisma
-          updatedAt: venezuelaDate  // Sobrescribimos el updatedAt
+          createdAt: venezuelaDate, 
+          updatedAt: venezuelaDate  
         }
       });
 
-      const detallesData: any[] = [];
-      cart.forEach((item: any) => {
-        detallesData.push({
-          pedidoId: pedido.id,
-          productoId: item.producto.id,
-          cantidad: item.cantidad,
-          precioUnitario: item.precioUnitario,
-          subtotal: item.precioUnitario * item.cantidad
+      // Guardar con Jerarquía: Padre (Pizza) -> Hijos (Toppings)
+      for (const item of cart) {
+        // 1. Guardar Producto Principal
+        const detallePadre = await tx.detallePedido.create({
+          data: {
+            pedidoId: pedido.id,
+            productoId: item.producto.id,
+            cantidad: item.cantidad,
+            precioUnitario: item.precioUnitario,
+            subtotal: item.precioUnitario * item.cantidad
+          }
         });
 
+        // 2. Si tiene extras, se guardan atados al ID del Padre (parentDetalleId)
         if (item.subItems && item.subItems.length > 0) {
-          item.subItems.forEach((sub: any) => {
-            detallesData.push({
-              pedidoId: pedido.id,
-              productoId: sub.producto.id,
-              cantidad: sub.cantidad * item.cantidad, 
-              precioUnitario: sub.precio,
-              subtotal: (sub.precio * sub.cantidad) * item.cantidad
-            });
-          });
+          const subItemsData = item.subItems.map((sub: any) => ({
+            pedidoId: pedido.id,
+            productoId: sub.producto.id,
+            cantidad: sub.cantidad * item.cantidad, 
+            precioUnitario: sub.precio,
+            subtotal: (sub.precio * sub.cantidad) * item.cantidad,
+            parentDetalleId: detallePadre.id
+          }));
+          await tx.detallePedido.createMany({ data: subItemsData });
         }
-      });
-
-      await tx.detallePedido.createMany({ data: detallesData });
+      }
 
       if (estadoPago === "PAGADO") {
         await tx.pago.create({
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
             montoUSD: totalUSD,
             montoVES: totalVES,
             referencia: referencia || null,
-            createdAt: venezuelaDate // Sobrescribimos el default(now()) en el pago
+            createdAt: venezuelaDate 
           }
         });
       }
