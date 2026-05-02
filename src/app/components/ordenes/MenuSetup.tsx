@@ -274,7 +274,7 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
             <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-4 space-y-6 relative z-0">
 
               <div className="space-y-2 relative z-30">
-                <label className="text-[10px] font-black text-[#294C29]/60 uppercase tracking-widest">Base Seleccionada</label>
+                <label className="text-[12px] font-black text-[#294C29]/80 uppercase tracking-widest">Base Seleccionada</label>
                 <CustomSelect 
                   value={pizzaBase.id}
                   options={basesDisponibles.map(b => ({ value: b.id, label: `${b.nombre} ($${b.precioBase.toFixed(2)})` }))}
@@ -304,7 +304,7 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
               {/* 1. SECCIÓN ADICIONALES (Toppings) */}
               {toppingsDisponibles.length > 0 && (
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-[#294C29]/60 uppercase tracking-widest flex items-center gap-2">
+                  <label className="text-[12px] font-black text-[#294C29]/80 uppercase tracking-widest flex items-center gap-2">
                     <Tag className="w-3 h-3" /> Adicionales (Opcional)
                   </label>
                   <div className="space-y-2">
@@ -315,8 +315,8 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
                       return (
                         <div key={item.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${cantidad > 0 ? "bg-white border-[#B43E17]/30 shadow-sm" : "bg-[#FDF8F1] border-[#294C29]/10"}`}>
                           <div>
-                            <p className="font-bold text-[#294C29] text-sm">{item.nombre}</p>
-                            <p className="text-[11px] font-black text-[#B43E17] uppercase">+${precioActual.toFixed(2)}</p>
+                            <p className="font-bold text-[#294C29] text-md">{item.nombre}</p>
+                            <p className="text-[12px] font-black text-[#B43E17] uppercase">+${precioActual.toFixed(2)}</p>
                           </div>
                           <div className="flex items-center gap-3 bg-white rounded-xl p-1 border border-[#294C29]/5 shadow-sm">
                             <button onClick={() => handleUpdateSubItem(item, -1)} className="w-8 h-8 bg-[#FDF8F1] text-[#294C29] rounded-lg flex items-center justify-center hover:bg-[#B43E17] hover:text-white transition-colors"><Minus className="w-4 h-4" /></button>
@@ -333,7 +333,7 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
               {/* 2. SECCIÓN EXTRAS */}
               {extrasDisponibles.length > 0 && (
                 <div className="space-y-4 pt-2">
-                  <label className="text-[10px] font-black text-[#294C29]/60 uppercase tracking-widest flex items-center gap-2">
+                  <label className="text-[12px] font-black text-[#294C29]/80 uppercase tracking-widest flex items-center gap-2">
                     <Tag className="w-3 h-3" /> Extras (Opcional)
                   </label>
                   <div className="space-y-2">
@@ -344,8 +344,8 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
                       return (
                         <div key={item.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${cantidad > 0 ? "bg-white border-[#B43E17]/30 shadow-sm" : "bg-[#FDF8F1] border-[#294C29]/10"}`}>
                           <div>
-                            <p className="font-bold text-[#294C29] text-sm">{item.nombre}</p>
-                            <p className="text-[11px] font-black text-[#B43E17] uppercase">+${precioActual.toFixed(2)}</p>
+                            <p className="font-bold text-[#294C29] text-md">{item.nombre}</p>
+                            <p className="text-[12px] font-black text-[#B43E17] uppercase">+${precioActual.toFixed(2)}</p>
                           </div>
                           <div className="flex items-center gap-3 bg-white rounded-xl p-1 border border-[#294C29]/5 shadow-sm">
                             <button onClick={() => handleUpdateSubItem(item, -1)} className="w-8 h-8 bg-[#FDF8F1] text-[#294C29] rounded-lg flex items-center justify-center hover:bg-[#B43E17] hover:text-white transition-colors"><Minus className="w-4 h-4" /></button>
