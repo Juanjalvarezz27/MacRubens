@@ -38,7 +38,6 @@ interface MenuSetupProps {
   onCancelEdit?: () => void;
 }
 
-// Componente Select Personalizado (Reemplaza el <select> y <option> nativos)
 const CustomSelect = ({ value, options, onChange, placeholder = "Seleccionar..." }: { value: string, options: {value: string, label: string}[], onChange: (val: string) => void, placeholder?: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selected = options.find(o => o.value === value);
@@ -55,9 +54,7 @@ const CustomSelect = ({ value, options, onChange, placeholder = "Seleccionar..."
 
       {isOpen && (
         <>
-          {/* Overlay invisible para cerrar al hacer click afuera (Ajuste z-index) */}
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>
-          {/* Menú desplegable (Ajuste z-index para no interferir con scroll inferior) */}
           <div className="absolute z-50 w-full mt-2 bg-white border border-[#294C29]/10 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
             {options.map(opt => (
               <div 
@@ -83,20 +80,29 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
   const [activeCategory, setActiveCategory] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Estados del Constructor de Pizza (Modal)
   const [builderOpen, setBuilderOpen] = useState(false);
   const [pizzaBase, setPizzaBase] = useState<Producto | null>(null);
   const [esPequena, setEsPequena] = useState(false);
   const [subItems, setSubItems] = useState<SubItem[]>([]);
 
-  // Estados para Modal de Delivery (Ahora usa el componente externo)
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
   const [deliveryProduct, setDeliveryProduct] = useState<Producto | null>(null);
+
+  // --- CORRECCIÓN: BLOQUEO DE SCROLL DEL BODY ---
+  useEffect(() => {
+    if (builderOpen || deliveryModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => { document.body.style.overflow = "unset"; };
+  }, [builderOpen, deliveryModalOpen]);
 
   useEffect(() => {
     fetchMenu();
   }, []);
 
+  // --- CORRECCIÓN: RESET DE ESTADOS AL EDITAR ---
   useEffect(() => {
     if (itemToEdit) {
       setPizzaBase(itemToEdit.producto);
@@ -110,14 +116,11 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
     try {
       const res = await fetch("/api/menu");
       const data = await res.json();
-
       const ordenCategorias = ["base", "especial", "topping", "extra", "bebida", "delivery"];
       const categoriasOrdenadas = data.categorias.sort((a: Categoria, b: Categoria) => {
         return ordenCategorias.indexOf(a.nombre.toLowerCase()) - ordenCategorias.indexOf(b.nombre.toLowerCase());
       });
-
       setMenu({ productos: data.productos, categorias: categoriasOrdenadas });
-
       const primeraVisible = categoriasOrdenadas.find((c: Categoria) => !["topping", "extra"].includes(c.nombre.toLowerCase()));
       if (primeraVisible) setActiveCategory(primeraVisible.id);
     } catch (error) {
@@ -128,15 +131,8 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
   };
 
   const categoriasPrincipales = menu.categorias.filter(c => !["topping", "extra"].includes(c.nombre.toLowerCase()));
-
-  const toppingsDisponibles = menu.productos
-    .filter(p => p.categoria?.nombre.toLowerCase() === "topping")
-    .sort((a, b) => a.precioBase - b.precioBase);
-
-  const extrasDisponibles = menu.productos
-    .filter(p => p.categoria?.nombre.toLowerCase() === "extra")
-    .sort((a, b) => a.precioBase - b.precioBase);
-
+  const toppingsDisponibles = menu.productos.filter(p => p.categoria?.nombre.toLowerCase() === "topping").sort((a, b) => a.precioBase - b.precioBase);
+  const extrasDisponibles = menu.productos.filter(p => p.categoria?.nombre.toLowerCase() === "extra").sort((a, b) => a.precioBase - b.precioBase);
   const basesDisponibles = menu.productos.filter(p => ["base", "especial"].includes(p.categoria?.nombre.toLowerCase() || ""));
 
   const handleSelectPizza = (producto: Producto) => {
@@ -164,7 +160,6 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
     setSubItems(prev => {
       const existe = prev.find(item => item.producto.id === producto.id);
       const precioUnitario = esPequena && producto.precioPequena ? producto.precioPequena : producto.precioBase;
-
       if (existe) {
         const nuevaCantidad = existe.cantidad + delta;
         if (nuevaCantidad <= 0) return prev.filter(item => item.producto.id !== producto.id);
@@ -179,7 +174,8 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
   const cerrarModal = () => {
     setBuilderOpen(false);
     setPizzaBase(null);
-    if (onCancelEdit) onCancelEdit();
+    setSubItems([]); // Reset local
+    if (onCancelEdit) onCancelEdit(); // Limpia el estado en el padre para permitir re-editar
   };
 
   const confirmarPizza = () => {
@@ -189,11 +185,9 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
   };
 
   return (
-    // CORRECCIÓN 1: Contenedor principal sin relative ni z-0 para evitar invasión al ticket
     <div className="w-full flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
-
-      {/* TABS CATEGORÍAS - VERSIÓN MOBILE (Custom Select) */}
-      {/* CORRECCIÓN 3.1: Reducción de Z-index excesivo para no colisionar con header modal */}
+      
+      {/* TABS CATEGORÍAS - MOBILE */}
       <div className="md:hidden mb-4 px-1 relative z-30">
         {!loading && categoriasPrincipales.length > 0 && (
           <CustomSelect 
@@ -204,7 +198,7 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
         )}
       </div>
 
-      {/* TABS CATEGORÍAS - VERSIÓN DESKTOP (Botones) */}
+      {/* TABS CATEGORÍAS - DESKTOP */}
       <div className="hidden md:flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-2 px-1 relative z-10">
         {loading ? (
           Array(4).fill(0).map((_, i) => <div key={i} className="w-28 h-12 bg-[#EADDCA]/30 animate-pulse rounded-2xl"></div>)
@@ -247,7 +241,6 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
                 <h3 className="text-base font-black text-[#294C29] uppercase leading-tight mb-2 pr-4">{producto.nombre}</h3>
                 {producto.descripcion && <p className="text-xs text-[#294C29]/50 font-bold line-clamp-2 pr-4">{producto.descripcion}</p>}
               </div>
-
               <div className="mt-4 flex justify-between items-end relative z-10">
                 <span className="text-xl font-black text-[#294C29] tracking-tighter">
                   {esDelivery ? "Precio" : `$${producto.precioBase.toFixed(2)}`}
@@ -261,7 +254,6 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
         })}
       </div>
 
-      {/* MODAL PRECIO DELIVERY SEPARADO */}
       <DeliveryModal 
         isOpen={deliveryModalOpen} 
         onClose={() => setDeliveryModalOpen(false)} 
@@ -270,21 +262,17 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
 
       {/* MODAL CONSTRUCTOR DE PIZZA */}
       {builderOpen && pizzaBase && (
-        // CORRECCIÓN 1.1: Z-index del modal reducido a 50 para no pisar el ticket lateral (que debe usar z-40 o menos)
-        <div className="fixed inset-0 z-50 flex justify-end bg-[#1B361B]/80 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-60 flex justify-end bg-[#1B361B]/80 animate-in fade-in duration-200">
           <div className="w-full sm:w-112.5 bg-[#FDF8F1] h-full shadow-2xl flex flex-col animate-in slide-in-from-right-full duration-300">
 
-            {/* CORRECCIÓN 3.2: Reducción de Z-index del header para no interferir con clics inferiores si el select se abre */}
             <div className="p-6 bg-white border-b border-[#294C29]/10 flex justify-between items-center relative z-20">
-              <div>
-                <h2 className="text-xl font-black text-[#294C29] uppercase tracking-tighter">{itemToEdit ? "Editar Pizza" : "Armar Pizza"}</h2>
-              </div>
+              <h2 className="text-xl font-black text-[#294C29] uppercase tracking-tighter">{itemToEdit ? "Editar Pizza" : "Armar Pizza"}</h2>
               <button onClick={cerrarModal} className="p-2 bg-[#FDF8F1] hover:bg-[#EADDCA] text-[#294C29] rounded-full"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 relative z-0">
+            {/* --- CORRECCIÓN: OVERSCROLL-CONTAIN PARA EL TICKET/BUILDER --- */}
+            <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-4 space-y-6 relative z-0">
 
-              {/* CORRECCIÓN 3.3: Select con z-30 para abrirse sobre el contenido pero bajo el header si este tuviera dropdown propio */}
               <div className="space-y-2 relative z-30">
                 <label className="text-[10px] font-black text-[#294C29]/60 uppercase tracking-widest">Base Seleccionada</label>
                 <CustomSelect 
@@ -297,9 +285,8 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
                 />
               </div>
 
-              {/* Tamaño */}
               {pizzaBase.precioPequena && (
-                <div className="space-y-3 relative z-0">
+                <div className="space-y-3">
                   <label className="text-[10px] font-black text-[#294C29]/60 uppercase tracking-widest">Tamaño de la Pizza</label>
                   <div className="flex gap-3">
                     <button onClick={() => { setEsPequena(false); setSubItems([]); }} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all ${!esPequena ? "bg-[#294C29] text-[#F6E4C9] border-[#294C29]" : "bg-white text-[#294C29] border-[#294C29]/10"}`}>
@@ -312,25 +299,21 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
                 </div>
               )}
 
-              {/* Toppings y Extras */}
-              <div className="space-y-4 relative z-0">
+              <div className="space-y-4">
                 <label className="text-[10px] font-black text-[#294C29]/60 uppercase tracking-widest flex items-center gap-2">
                   <Tag className="w-3 h-3" /> Adicionales (Opcional)
                 </label>
-
                 <div className="space-y-2">
                   {[...toppingsDisponibles, ...extrasDisponibles].map(item => {
                     const precioActual = esPequena && item.precioPequena ? item.precioPequena : item.precioBase;
                     const subItemSeleccionado = subItems.find(s => s.producto.id === item.id);
                     const cantidad = subItemSeleccionado?.cantidad || 0;
-
                     return (
                       <div key={item.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${cantidad > 0 ? "bg-white border-[#B43E17]/30 shadow-sm" : "bg-[#FDF8F1] border-[#294C29]/10"}`}>
                         <div>
                           <p className="font-bold text-[#294C29] text-sm">{item.nombre}</p>
                           <p className="text-[11px] font-black text-[#B43E17] uppercase">+${precioActual.toFixed(2)}</p>
                         </div>
-
                         <div className="flex items-center gap-3 bg-white rounded-xl p-1 border border-[#294C29]/5 shadow-sm">
                           <button onClick={() => handleUpdateSubItem(item, -1)} className="w-8 h-8 bg-[#FDF8F1] text-[#294C29] rounded-lg flex items-center justify-center hover:bg-[#B43E17] hover:text-white transition-colors"><Minus className="w-4 h-4" /></button>
                           <span className="font-black text-base w-5 text-center">{cantidad}</span>
@@ -341,10 +324,8 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
                   })}
                 </div>
               </div>
-
             </div>
 
-            {/* CORRECCIÓN 2: Padded vertical reducido (p-6 -> p-4) para asegurar accesibilidad en mobile */}
             <div className="p-4 bg-white border-t border-[#294C29]/10 relative z-10">
               <button
                 onClick={confirmarPizza}
@@ -353,7 +334,6 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
                 <Check className="w-5 h-5" /> {itemToEdit ? "Guardar Cambios" : "Agregar al Ticket"}
               </button>
             </div>
-
           </div>
         </div>
       )}
