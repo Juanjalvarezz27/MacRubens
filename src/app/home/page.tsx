@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; 
 import ClienteSetup, { DatosCliente } from "../components/ordenes/ClienteSetup";
 import MenuSetup, { Producto, SubItem, CartItem } from "../components/ordenes/MenuSetup";
 import useTasaBCV from "../../hooks/useTasaBCV";
 import { User, Pizza, CreditCard, ShoppingBag, ChevronUp, ChevronRight, X, Plus, Minus, Loader2, Edit3 } from "lucide-react";
-import ConfirmModal from "../components/ui/ConfirmModal"; 
+import ConfirmModal from "../components/ui/ConfirmModal";
 
 export default function POSPage() {
   const { tasa, loading: loadingTasa } = useTasaBCV();
@@ -20,6 +20,20 @@ export default function POSPage() {
 
   // --- ESTADO PARA EL MODAL DE ELIMINACIÓN ---
   const [idToDelete, setIdToDelete] = useState<string | null>(null);
+
+  // --- NUEVO: Bloqueamos el scroll del fondo cuando el carrito móvil está abierto ---
+  useEffect(() => {
+    if (isMobileCartOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    
+    // Limpieza al desmontar
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isMobileCartOpen]);
 
   const handleClientConfirmed = (datos: DatosCliente) => {
     setCliente(datos);
@@ -82,7 +96,6 @@ export default function POSPage() {
     }));
   };
 
-  // --- FUNCIÓN PARA CONFIRMAR ELIMINACIÓN ---
   const handleConfirmDelete = () => {
     if (idToDelete) {
       setCart(cart.filter(item => item.uniqueId !== idToDelete));
@@ -97,7 +110,7 @@ export default function POSPage() {
     <div className="w-full min-h-[calc(100vh-80px)] flex flex-col lg:flex-row bg-[#FDF8F1] overflow-hidden relative">
 
       {/* MODAL DE CONFIRMACIÓN */}
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={!!idToDelete}
         onClose={() => setIdToDelete(null)}
         onConfirm={handleConfirmDelete}
@@ -192,7 +205,8 @@ export default function POSPage() {
         </div>
 
         {/* LISTA DE ITEMS */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 bg-[#FDF8F1]/50 lg:bg-transparent">
+        {/* --- NUEVO: Agregamos "overscroll-contain" aquí --- */}
+        <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-4 bg-[#FDF8F1]/50 lg:bg-transparent">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-[#294C29]/20">
               <ShoppingBag className="w-16 h-16 mb-4 opacity-50" />
@@ -209,7 +223,7 @@ export default function POSPage() {
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex-1">
                         <h4 className="font-black text-[#294C29] text-base leading-tight uppercase flex flex-wrap items-baseline gap-1">
-                          <span className="text-[#B43E17]">{item.cantidad}x</span> 
+                          <span className="text-[#B43E17]">{item.cantidad}x</span>
                           {item.producto.nombre}
                         </h4>
                         {item.esPequena && <span className="inline-block text-[10px] font-black bg-[#B43E17]/10 text-[#B43E17] px-2 py-0.5 rounded-md uppercase tracking-widest mt-2">Pequeña</span>}
@@ -221,7 +235,6 @@ export default function POSPage() {
                             <Edit3 className="w-4 h-4" />
                           </button>
                         )}
-                        {/* CORRECCIÓN: Ahora llama a setIdToDelete en lugar de eliminar directamente */}
                         <button onClick={() => setIdToDelete(item.uniqueId)} className="p-1.5 text-[#294C29]/40 hover:text-[#B43E17] hover:bg-white rounded-md transition-colors" title="Eliminar Item">
                           <X className="w-4 h-4" />
                         </button>
@@ -234,7 +247,7 @@ export default function POSPage() {
                           <div key={idx} className="flex flex-col text-[13px] font-bold text-[#294C29]">
                             <span>+ {sub.cantidad}x {sub.producto.nombre}</span>
                             <span className="text-[11px] text-[#294C29]/70 font-semibold">
-                              ${sub.precio.toFixed(2)} <span className="text-[#294C29]/30">|</span> Bs. {(sub.precio * tasaActual).toFixed(2)} 
+                              ${sub.precio.toFixed(2)} <span className="text-[#294C29]/30">|</span> Bs. {(sub.precio * tasaActual).toFixed(2)}
                             </span>
                           </div>
                         ))}
