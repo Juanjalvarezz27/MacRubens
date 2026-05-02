@@ -2,15 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Calendar, ChevronDown, ChevronUp, Pizza, User, Clock, CheckCircle2, AlertCircle, CreditCard } from "lucide-react";
+import { Loader2, Calendar, ChevronDown, ChevronUp, Pizza, User, Clock, CheckCircle2, AlertCircle, CreditCard, Edit, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import ResumenGraficoDia from "../../../components/estadisticas/ResumenGraficoDia";
+import ConfirmModal from "../../../components/ui/ConfirmModal";
+import EditPedidoModal from "../../../components/estadisticas/EditPedidoModal";
 
 interface Categoria { nombre: string; }
 interface Producto { nombre: string; categoria: Categoria; }
 interface SubDetalle { id: string; cantidad: number; precioUnitario: number; subtotal: number; producto: Producto; }
 interface Detalle { id: string; cantidad: number; precioUnitario: number; subtotal: number; producto: Producto; subDetalles: SubDetalle[]; }
-interface Pago { metodo: { nombre: string }; montoUSD: number; montoVES: number; }
+interface Pago { metodo: { id?: string; nombre: string }; montoUSD: number; montoVES: number; }
 interface Cliente { nombre: string; cedula: string; telefono: string | null; }
 
 interface Pedido {
@@ -30,11 +32,12 @@ export default function EstadisticasDiariasPage() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Estado para expandir la orden completa
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  
-  // Estado para expandir los toppings de cada pizza individualmente
   const [expandedDetalles, setExpandedDetalles] = useState<Record<string, boolean>>({});
+
+  // Estados para los Modales
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const [orderToEdit, setOrderToEdit] = useState<Pedido | null>(null);
 
   const fetchEstadisticas = async () => {
     setLoading(true);
@@ -54,6 +57,19 @@ export default function EstadisticasDiariasPage() {
     fetchEstadisticas();
   }, []);
 
+  const handleDeleteConfirm = async () => {
+    if (!orderToDelete) return;
+    try {
+      const res = await fetch(`/api/pedidos/${orderToDelete}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error("Error");
+      toast.success("Orden eliminada correctamente");
+      setOrderToDelete(null);
+      fetchEstadisticas(); // Recargamos las estadísticas
+    } catch (error) {
+      toast.error("Hubo un problema al eliminar la orden");
+    }
+  };
+
   const formatHora = (isoString: string) => {
     return new Date(isoString).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
   };
@@ -61,32 +77,28 @@ export default function EstadisticasDiariasPage() {
   const fechaHoy = new Date().toLocaleDateString('es-VE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   const toggleDetalle = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Evita que se cierre la orden completa al hacer clic aquí
+    e.stopPropagation();
     setExpandedDetalles(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // ALGORITMO RETROACTIVO: Agrupa órdenes viejas planas simulando la jerarquía Padre-Hijo
   const agruparDetalles = (detallesPlano: Detalle[]) => {
     const agrupados: Detalle[] = [];
     let ultimaPizza: Detalle | null = null;
 
     detallesPlano.forEach(detalle => {
-      const nombreCat = detalle.producto.categoria.nombre.toLowerCase();
+      const nombreCat = detalle.producto?.categoria?.nombre?.toLowerCase() || "";
       const isPizza = ["base", "especial", "pizza"].some(c => nombreCat.includes(c));
       const isTopping = ["topping", "extra", "adicional", "ingrediente"].some(c => nombreCat.includes(c));
 
-      // 1. Si la orden es NUEVA y ya viene agrupada desde la BD
       if (detalle.subDetalles && detalle.subDetalles.length > 0) {
         agrupados.push(detalle);
         ultimaPizza = null;
       } 
-      // 2. Si es una Pizza, creamos la tarjeta padre y la guardamos en memoria
       else if (isPizza) {
         const nuevaPizza = { ...detalle, subDetalles: [] };
         agrupados.push(nuevaPizza);
         ultimaPizza = nuevaPizza;
       }
-      // 3. Si es un Topping huérfano (Órdenes Viejas) y tenemos una pizza activa arriba
       else if (isTopping && ultimaPizza) {
         ultimaPizza.subDetalles.push({
           id: detalle.id,
@@ -96,7 +108,6 @@ export default function EstadisticasDiariasPage() {
           producto: detalle.producto
         });
       }
-      // 4. Si es Bebida, Caja, u otra cosa
       else {
         agrupados.push({ ...detalle, subDetalles: [] });
         ultimaPizza = null;
@@ -118,6 +129,25 @@ export default function EstadisticasDiariasPage() {
   return (
     <div className="w-full min-h-[calc(100vh-80px)] bg-[#FDF8F1] p-6 lg:p-10 overflow-y-auto">
       
+      {/* MODALES */}
+      <ConfirmModal
+        isOpen={!!orderToDelete}
+        onClose={() => setOrderToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="¿Eliminar Orden?"
+        message="¿Estás seguro de que deseas eliminar esta orden del sistema? Esto restará el dinero de las estadísticas de hoy. Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        isDestructive={true}
+      />
+
+      <EditPedidoModal 
+        isOpen={!!orderToEdit}
+        onClose={() => setOrderToEdit(null)}
+        pedido={orderToEdit}
+        onSuccess={fetchEstadisticas}
+      />
+
       {/* HEADER */}
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div className="flex flex-col items-center lg:items-start space-y-2 w-full md:w-auto text-center md:text-left">
@@ -142,12 +172,10 @@ export default function EstadisticasDiariasPage() {
         </div>
       </div>
 
-      {/* COMPONENTE DE GRÁFICAS */}
       <div className="max-w-5xl mx-auto">
          <ResumenGraficoDia pedidos={pedidos} />
       </div>
 
-      {/* LISTA DE ÓRDENES */}
       <div className="max-w-5xl mx-auto">
         {pedidos.length === 0 ? (
           <div className="bg-white rounded-3xl p-16 text-center border border-[#294C29]/10 shadow-sm">
@@ -160,13 +188,11 @@ export default function EstadisticasDiariasPage() {
             {pedidos.map((pedido) => {
               const isExpanded = expandedId === pedido.id;
               const isPendiente = pedido.estadoPago === "PENDIENTE";
-              
               const detallesOrganizados = agruparDetalles(pedido.detalles);
 
               return (
                 <div key={pedido.id} className={`bg-white rounded-4xl border-2 transition-all shadow-sm overflow-hidden ${isPendiente ? "border-[#B43E17]/30" : "border-[#294C29]/5 hover:border-[#294C29]/20"}`}>
                   
-                  {/* BARRA SUPERIOR DE LA ORDEN */}
                   <div 
                     onClick={() => setExpandedId(isExpanded ? null : pedido.id)}
                     className="p-5 lg:p-6 cursor-pointer flex flex-col lg:flex-row lg:items-center justify-between gap-4"
@@ -176,10 +202,10 @@ export default function EstadisticasDiariasPage() {
                         <User className="w-6 h-6" />
                       </div>
                       <div>
-                        <h3 className="font-black text-lg text-[#294C29] uppercase tracking-tighter leading-none mb-1">{pedido.cliente.nombre}</h3>
+                        <h3 className="font-black text-lg text-[#294C29] uppercase tracking-tighter leading-none mb-1">{pedido.cliente?.nombre || "Cliente"}</h3>
                         <div className="flex items-center gap-3 text-[11px] font-bold text-[#294C29]/50 uppercase tracking-widest">
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatHora(pedido.createdAt)}</span>
-                          <span className="flex items-center gap-1">CI: {pedido.cliente.cedula}</span>
+                          <span className="flex items-center gap-1">CI: {pedido.cliente?.cedula || "N/A"}</span>
                         </div>
                       </div>
                     </div>
@@ -192,21 +218,36 @@ export default function EstadisticasDiariasPage() {
                       
                       <div className="flex items-center gap-3">
                         {isPendiente ? (
-                          // AQUÍ ESTÁ EL BOTÓN DE REDIRECCIÓN A LA CAJA
                           <button 
-                            onClick={(e) => {
-                              e.stopPropagation(); // Evita que se abra/cierre el acordeón al darle clic
-                              router.push(`/home?pedidoId=${pedido.id}`); // Lanza al usuario a la caja
-                            }}
+                            onClick={(e) => { e.stopPropagation(); router.push(`/home?pedidoId=${pedido.id}`); }}
                             className="bg-[#B43E17] hover:bg-[#9F280A] text-white px-4 py-2 rounded-xl uppercase tracking-widest text-[10px] font-black flex items-center gap-1.5 transition-colors shadow-sm"
                           >
-                            <CreditCard className="w-4 h-4" /> Pagar Orden
+                            <CreditCard className="w-4 h-4" /> Pagar
                           </button>
                         ) : (
                           <span className="bg-[#294C29]/10 text-[#294C29] px-3 py-1.5 rounded-xl uppercase tracking-widest text-[10px] font-black flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> {pedido.pagos[0]?.metodo.nombre || "Pagado"}
+                            <CheckCircle2 className="w-3 h-3" /> {pedido.pagos[0]?.metodo?.nombre || "Pagado"}
                           </span>
                         )}
+
+                        {/* BOTONES DE EDICIÓN Y ELIMINACIÓN */}
+                        <div className="flex items-center gap-1 bg-[#FDF8F1] rounded-xl p-1">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setOrderToEdit(pedido); }}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#294C29]/50 hover:text-[#294C29] hover:bg-white transition-colors"
+                            title="Editar Pago"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setOrderToDelete(pedido.id); }}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#294C29]/50 hover:text-[#B43E17] hover:bg-white transition-colors"
+                            title="Eliminar Orden"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
                         <div className="w-8 h-8 bg-[#FDF8F1] rounded-full flex items-center justify-center text-[#294C29]">
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </div>
@@ -214,7 +255,6 @@ export default function EstadisticasDiariasPage() {
                     </div>
                   </div>
 
-                  {/* DETALLE DE LA ORDEN */}
                   {isExpanded && (
                     <div className="bg-[#FDF8F1]/50 border-t border-[#294C29]/10 p-6 lg:p-8 animate-in slide-in-from-top-4 duration-300">
                       
@@ -230,10 +270,9 @@ export default function EstadisticasDiariasPage() {
                           return (
                             <div key={detalle.id} className="bg-white p-6 rounded-4xl border border-[#294C29]/10 shadow-sm flex flex-col h-fit">
                               
-                              {/* PRODUCTO PRINCIPAL Y BOTÓN DE DESPLEGAR */}
                               <div className="mb-4 flex justify-between items-start gap-4">
                                 <h4 className="font-black text-[#294C29] text-[17px] uppercase tracking-tighter flex items-baseline gap-1.5">
-                                  <span className="text-[#B43E17] text-lg">{detalle.cantidad}X</span> {detalle.producto.nombre}
+                                  <span className="text-[#B43E17] text-lg">{detalle.cantidad}X</span> {detalle.producto?.nombre || "Desconocido"}
                                 </h4>
                                 
                                 {tieneExtras && (
@@ -246,13 +285,12 @@ export default function EstadisticasDiariasPage() {
                                 )}
                               </div>
                               
-                              {/* TOPPINGS / EXTRAS (DESPLEGABLES) */}
                               {tieneExtras && isItemExpanded && (
                                 <div className="mb-4 pl-4 border-l-[3px] border-[#B43E17]/20 space-y-4 animate-in slide-in-from-top-2">
                                   {detalle.subDetalles.map((sub, idx) => (
                                     <div key={`${sub.id}-${idx}`} className="flex flex-col">
                                       <span className="font-bold text-[#294C29] text-[15px] tracking-tight">
-                                        + {sub.cantidad}x {sub.producto.nombre}
+                                        + {sub.cantidad}x {sub.producto?.nombre || "Extra"}
                                       </span>
                                       <span className="text-[12px] font-bold text-gray-400 mt-1 tracking-wide">
                                         ${sub.precioUnitario.toFixed(2)} <span className="text-gray-300 mx-1">|</span> Bs. {(sub.precioUnitario * pedido.tasaBCV).toFixed(2)}
@@ -262,7 +300,6 @@ export default function EstadisticasDiariasPage() {
                                 </div>
                               )}
 
-                              {/* PIE DE TARJETA (CANTIDAD Y TOTALES) */}
                               <div className="flex justify-between items-end pt-5 border-t border-gray-100 mt-2">
                                 <div className="bg-[#FDF8F1] px-4 py-2 rounded-xl flex items-center justify-center border border-[#294C29]/5">
                                    <span className="font-black text-sm uppercase tracking-widest text-[#294C29]/60">Cant: <span className="text-lg text-[#294C29] ml-1">{detalle.cantidad}</span></span>
