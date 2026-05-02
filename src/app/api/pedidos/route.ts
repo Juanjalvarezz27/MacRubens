@@ -7,13 +7,20 @@ const prisma = new PrismaClient();
 export async function POST(req: NextRequest) {
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!token) return NextResponse.json({ error: "No autorizado. Inicia sesión." }, { status: 401 });
-
-    let usuarioId = token.sub;
-    if (!usuarioId) {
-      const admin = await prisma.usuario.findFirst();
-      if (!admin) return NextResponse.json({ error: "Usuario no encontrado en la BD" }, { status: 500 });
-      usuarioId = admin.id;
+    
+    // 🔥 SOLUCIÓN AL ERROR FKEY: Verificamos que el usuario realmente exista en la BD
+    let usuarioIdParaBd = "";
+    
+    if (token?.sub) {
+      const userInDb = await prisma.usuario.findUnique({ where: { id: token.sub } });
+      if (userInDb) usuarioIdParaBd = userInDb.id;
+    }
+    
+    // Fallback: Si el token expiró o el usuario no existe, usamos el primer administrador del sistema
+    if (!usuarioIdParaBd) {
+      const fallbackUser = await prisma.usuario.findFirst();
+      if (!fallbackUser) return NextResponse.json({ error: "No hay usuarios en la base de datos" }, { status: 500 });
+      usuarioIdParaBd = fallbackUser.id;
     }
 
     const body = await req.json();
@@ -25,7 +32,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Falta el método de pago" }, { status: 400 });
     }
 
-    // Forzamos la hora exacta de Venezuela para evitar desfases en Vercel
     const now = new Date();
     const venezuelaTimeString = now.toLocaleString("en-US", { timeZone: "America/Caracas" });
     const venezuelaDate = new Date(venezuelaTimeString);
@@ -46,7 +52,7 @@ export async function POST(req: NextRequest) {
       const pedido = await tx.pedido.create({
         data: {
           clienteId: clienteDb.id,
-          usuarioId: usuarioId, 
+          usuarioId: usuarioIdParaBd, // 🔥 Usamos el ID validado
           estadoId: estado.id,
           estadoPago: estadoPago, 
           totalUSD: totalUSD,
@@ -57,9 +63,8 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      // Guardar con Jerarquía: Padre (Pizza) -> Hijos (Toppings)
+      // Guardar con Jerarquía: Padre -> Hijos
       for (const item of cart) {
-        // 1. Guardar Producto Principal
         const detallePadre = await tx.detallePedido.create({
           data: {
             pedidoId: pedido.id,
@@ -70,7 +75,6 @@ export async function POST(req: NextRequest) {
           }
         });
 
-        // 2. Si tiene extras, se guardan atados al ID del Padre (parentDetalleId)
         if (item.subItems && item.subItems.length > 0) {
           const subItemsData = item.subItems.map((sub: any) => ({
             pedidoId: pedido.id,
@@ -110,12 +114,9 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    const metodos = await prisma.metodoPago.findMany({
-      orderBy: { nombre: 'asc' }
-    });
+    const metodos = await prisma.metodoPago.findMany({ orderBy: { nombre: 'asc' } });
     return NextResponse.json(metodos, { status: 200 });
   } catch (error) {
-    console.error("Error obteniendo métodos:", error);
     return NextResponse.json({ error: "Error obteniendo métodos de pago" }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import ClienteSetup, { DatosCliente } from "../components/ordenes/ClienteSetup";
 import MenuSetup, { Producto, SubItem, CartItem } from "../components/ordenes/MenuSetup";
 import PagoSetup from "../components/ordenes/PagoSetup";
@@ -9,9 +10,12 @@ import { User, Pizza, CreditCard, ShoppingBag, ChevronUp, ChevronRight, X, Plus,
 import ConfirmModal from "../components/ui/ConfirmModal";
 import { toast } from "react-toastify";
 
-export default function POSPage() {
+function POSContent() {
   const { tasa, loading: loadingTasa } = useTasaBCV();
   const tasaActual = tasa || 38.50;
+  
+  const searchParams = useSearchParams();
+  const pedidoPendienteId = searchParams.get("pedidoId");
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [cliente, setCliente] = useState<DatosCliente | null>(null);
@@ -19,32 +23,76 @@ export default function POSPage() {
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CartItem | null>(null);
 
-  // Estados para Modales
   const [idToDelete, setIdToDelete] = useState<string | null>(null);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false); //  Modal para cancelar todo
-
-  //  MAGIA SENIOR: Autoguardado e Hidratación
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  
+  // ESCUDO PROTECTOR CONTRA EL DOBLE RENDER DE REACT
+  const initStarted = useRef(false);
 
-  // 1. Cargar datos desde LocalStorage al iniciar
   useEffect(() => {
-    try {
-      const savedCart = localStorage.getItem("macrubens_cart");
-      const savedCliente = localStorage.getItem("macrubens_cliente");
-      const savedStep = localStorage.getItem("macrubens_step");
+    const initPOS = async () => {
+      // Si ya empezó a iniciar, cancelamos la segunda vuelta del Strict Mode
+      if (initStarted.current) return;
+      initStarted.current = true;
 
-      if (savedCart) setCart(JSON.parse(savedCart));
-      if (savedCliente) setCliente(JSON.parse(savedCliente));
-      if (savedStep) setStep(Number(savedStep) as 1 | 2 | 3);
-    } catch (e) {
-      console.error("Error cargando el borrador de la orden", e);
-    }
-    setIsHydrated(true);
-  }, []);
+      if (pedidoPendienteId) {
+        try {
+          const res = await fetch(`/api/pedidos/${pedidoPendienteId}`);
+          if (res.ok) {
+            const data = await res.json();
+            
+            setCliente({ cedula: data.cliente.cedula, nombre: data.cliente.nombre, telefono: data.cliente.telefono || "" });
+            
+            const reconstruido: CartItem[] = data.detalles.map((d: any) => ({
+              uniqueId: Math.random().toString(36).substring(7),
+              producto: d.producto,
+              cantidad: d.cantidad,
+              esPequena: false,
+              precioUnitario: d.precioUnitario,
+              subItems: d.subDetalles.map((sub: any) => ({
+                producto: sub.producto,
+                cantidad: sub.cantidad / d.cantidad, 
+                precio: sub.precioUnitario
+              })),
+              subtotal: d.subtotal + d.subDetalles.reduce((acc: number, sub: any) => acc + sub.subtotal, 0)
+            }));
+            
+            setCart(reconstruido);
+            setStep(3); 
+            
+            localStorage.setItem("macrubens_pedido_activo", pedidoPendienteId);
+            window.history.replaceState(null, "", "/home");
+            
+            // El Toast ahora solo saldrá una vez
+            toast.success("Orden recuperada correctamente");
+          } else {
+            toast.error("No se pudo cargar la orden pendiente");
+          }
+        } catch (error) {
+          toast.error("Error de conexión al cargar la orden");
+        }
+      } else {
+        try {
+          const savedCart = localStorage.getItem("macrubens_cart");
+          const savedCliente = localStorage.getItem("macrubens_cliente");
+          const savedStep = localStorage.getItem("macrubens_step");
 
-  // 2. Guardar datos en vivo cada vez que cambien (solo si ya hidratamos)
+          if (savedCart) setCart(JSON.parse(savedCart));
+          if (savedCliente) setCliente(JSON.parse(savedCliente));
+          if (savedStep) setStep(Number(savedStep) as 1 | 2 | 3);
+        } catch (e) {
+          console.error("Error cargando el borrador", e);
+        }
+      }
+      setIsHydrated(true);
+    };
+
+    if (!isHydrated) initPOS();
+  }, [pedidoPendienteId, isHydrated]);
+
   useEffect(() => {
-    if (isHydrated) {
+    if (isHydrated && !pedidoPendienteId) {
       localStorage.setItem("macrubens_cart", JSON.stringify(cart));
       localStorage.setItem("macrubens_step", step.toString());
       if (cliente) {
@@ -53,7 +101,7 @@ export default function POSPage() {
         localStorage.removeItem("macrubens_cliente");
       }
     }
-  }, [cart, cliente, step, isHydrated]);
+  }, [cart, cliente, step, isHydrated, pedidoPendienteId]);
 
   useEffect(() => {
     if (isMobileCartOpen) document.body.style.overflow = "hidden";
@@ -61,18 +109,16 @@ export default function POSPage() {
     return () => { document.body.style.overflow = "auto"; };
   }, [isMobileCartOpen]);
 
-  // Función para vaciar completamente la caja (Se usa al Pagar y al Cancelar)
   const resetCaja = () => {
     setCart([]);
     setCliente(null);
     setStep(1);
     setIsMobileCartOpen(false);
     setEditingItem(null);
-    
-    // Limpiar memoria
     localStorage.removeItem("macrubens_cart");
     localStorage.removeItem("macrubens_cliente");
     localStorage.removeItem("macrubens_step");
+    localStorage.removeItem("macrubens_pedido_activo");
   };
 
   const handleCancelOrderConfirm = () => {
@@ -148,18 +194,16 @@ export default function POSPage() {
   const totalUSD = cart.reduce((sum, item) => sum + item.subtotal, 0);
   const totalVES = totalUSD * tasaActual;
 
-  // Evita el destello de la interfaz antes de cargar el localstorage
   if (!isHydrated) return (
     <div className="w-full min-h-screen flex flex-col items-center justify-center bg-[#FDF8F1]">
       <Loader2 className="w-12 h-12 animate-spin text-[#B43E17]" />
-      <p className="mt-4 font-black text-[#294C29] uppercase tracking-widest text-xs">Restaurando sesión...</p>
+      <p className="mt-4 font-black text-[#294C29] uppercase tracking-widest text-xs">Preparando caja...</p>
     </div>
   );
 
   return (
     <div className="w-full min-h-[calc(100vh-80px)] flex flex-col lg:flex-row bg-[#FDF8F1] overflow-hidden relative">
 
-      {/* MODAL PARA ELIMINAR ITEM */}
       <ConfirmModal
         isOpen={!!idToDelete}
         onClose={() => setIdToDelete(null)}
@@ -171,7 +215,6 @@ export default function POSPage() {
         isDestructive={true}
       />
 
-      {/*  MODAL PARA CANCELAR TODA LA ORDEN */}
       <ConfirmModal
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
@@ -245,8 +288,8 @@ export default function POSPage() {
               totalUSD={totalUSD}
               totalVES={totalVES}
               onVolver={() => setStep(2)}
-              onSuccess={resetCaja} // El éxito limpia la caja y reinicia
-              onCancelOrder={() => setIsCancelModalOpen(true)} // Pasamos la función al componente hijo
+              onSuccess={resetCaja}
+              onCancelOrder={() => setIsCancelModalOpen(true)}
             />
           )}
         </div>
@@ -360,5 +403,19 @@ export default function POSPage() {
       </div>
 
     </div>
+  );
+}
+
+// OBLIGATORIO: Envolver en Suspense porque usamos useSearchParams de Next.js
+export default function POSPage() {
+  return (
+    <Suspense fallback={
+      <div className="w-full min-h-[calc(100vh-80px)] flex flex-col items-center justify-center bg-[#FDF8F1]">
+        <Loader2 className="w-12 h-12 animate-spin text-[#B43E17]" />
+        <p className="mt-4 font-black text-[#294C29] uppercase tracking-widest text-xs">Preparando sistema...</p>
+      </div>
+    }>
+      <POSContent />
+    </Suspense>
   );
 }

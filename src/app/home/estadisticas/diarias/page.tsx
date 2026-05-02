@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Calendar, ChevronDown, ChevronUp, Pizza, User, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Calendar, ChevronDown, ChevronUp, Pizza, User, Clock, CheckCircle2, AlertCircle, CreditCard } from "lucide-react";
 import { toast } from "react-toastify";
 import ResumenGraficoDia from "../../../components/estadisticas/ResumenGraficoDia";
 
@@ -25,6 +26,7 @@ interface Pedido {
 }
 
 export default function EstadisticasDiariasPage() {
+  const router = useRouter();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -190,9 +192,16 @@ export default function EstadisticasDiariasPage() {
                       
                       <div className="flex items-center gap-3">
                         {isPendiente ? (
-                          <span className="bg-[#B43E17]/10 text-[#B43E17] px-3 py-1.5 rounded-xl uppercase tracking-widest text-[10px] font-black flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" /> Pendiente
-                          </span>
+                          // AQUÍ ESTÁ EL BOTÓN DE REDIRECCIÓN A LA CAJA
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); // Evita que se abra/cierre el acordeón al darle clic
+                              router.push(`/home?pedidoId=${pedido.id}`); // Lanza al usuario a la caja
+                            }}
+                            className="bg-[#B43E17] hover:bg-[#9F280A] text-white px-4 py-2 rounded-xl uppercase tracking-widest text-[10px] font-black flex items-center gap-1.5 transition-colors shadow-sm"
+                          >
+                            <CreditCard className="w-4 h-4" /> Pagar Orden
+                          </button>
                         ) : (
                           <span className="bg-[#294C29]/10 text-[#294C29] px-3 py-1.5 rounded-xl uppercase tracking-widest text-[10px] font-black flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> {pedido.pagos[0]?.metodo.nombre || "Pagado"}
