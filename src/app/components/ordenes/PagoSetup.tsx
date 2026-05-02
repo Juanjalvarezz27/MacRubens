@@ -27,7 +27,6 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
   const [referencia, setReferencia] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // NUEVO ESTADO: Controla si la orden se paga ahora o después
   const [esPagado, setEsPagado] = useState(true);
 
   useEffect(() => {
@@ -49,7 +48,6 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
   const requiresReference = selectedMetodo && ["pago móvil", "punto de venta", "zelle"].some(m => selectedMetodo.nombre.toLowerCase().includes(m));
 
   const handleProcesar = async () => {
-    // Si está marcado como pagado, validamos los métodos
     if (esPagado) {
       if (!selectedMetodo) return toast.error("Seleccione un método de pago");
       if (requiresReference && referencia.trim().length < 4) return toast.error("Ingrese una referencia válida");
@@ -63,13 +61,18 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
         tasaBCV,
         totalUSD,
         totalVES,
-        estadoPago: esPagado ? "PAGADO" : "PENDIENTE", // Enviamos el estado al backend
+        estadoPago: esPagado ? "PAGADO" : "PENDIENTE",
         metodoPagoId: esPagado ? selectedMetodo?.id : null,
         referencia: (esPagado && requiresReference) ? referencia.trim() : null
       };
 
-      const res = await fetch("/api/pedidos", {
-        method: "POST",
+      // MAGIA: Detectamos si estamos creando o editando
+      const pedidoActivoId = localStorage.getItem("macrubens_pedido_activo");
+      const url = pedidoActivoId ? `/api/pedidos/${pedidoActivoId}` : "/api/pedidos";
+      const method = pedidoActivoId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -77,7 +80,13 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      toast.success(esPagado ? "¡Orden Procesada Exitosamente!" : "¡Orden Pendiente Registrada!");
+      // Mensajes dinámicos según la acción
+      if (pedidoActivoId) {
+        toast.success("¡Orden Actualizada Exitosamente!");
+      } else {
+        toast.success(esPagado ? "¡Orden Procesada Exitosamente!" : "¡Orden Pendiente Registrada!");
+      }
+      
       onSuccess(); 
     } catch (error: any) {
       toast.error(error.message || "Error al procesar la orden");
@@ -108,7 +117,6 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
         </div>
       </div>
 
-      {/* TOGGLE DE ESTADO DE PAGO */}
       <div className="mb-8 flex bg-[#FDF8F1] rounded-2xl p-1.5 border border-[#294C29]/10">
         <button 
           onClick={() => setEsPagado(true)}
@@ -126,7 +134,6 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         
-        {/* RESUMEN DE TOTALES */}
         <div className={`rounded-3xl p-6 text-[#F6E4C9] flex flex-col justify-center relative overflow-hidden shadow-lg transition-colors duration-500 ${esPagado ? "bg-[#294C29]" : "bg-[#B43E17]"}`}>
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-full -mr-10 -mt-10"></div>
           
@@ -142,7 +149,6 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
           </div>
         </div>
 
-        {/* MÉTODOS DE PAGO (Solo visibles si la orden es pagada de inmediato) */}
         {esPagado ? (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
             <div className="space-y-3">
@@ -199,7 +205,12 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
           ) : (
             <>
               {esPagado ? <CheckCircle2 className="w-6 h-6 shrink-0" /> : <Clock className="w-6 h-6 shrink-0" />}
-              <span className="text-center leading-tight">{esPagado ? "Confirmar y Facturar" : "Registrar Orden Pendiente"}</span>
+              <span className="text-center leading-tight">
+                {/* Texto dinámico si estamos editando o creando */}
+                {localStorage.getItem("macrubens_pedido_activo") 
+                  ? "Guardar Cambios" 
+                  : (esPagado ? "Confirmar y Facturar" : "Registrar Orden Pendiente")}
+              </span>
             </>
           )}
         </button>

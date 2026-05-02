@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// OBTENER PEDIDO (Ya lo teníamos)
+// OBTENER PEDIDO
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
@@ -23,7 +23,9 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 
     if (!pedido) return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
     return NextResponse.json(pedido, { status: 200 });
+
   } catch (error) {
+    console.error("Error obteniendo pedido:", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
@@ -32,63 +34,90 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    
-    // Al eliminar el pedido, Prisma eliminará los Detalles y Pagos automáticamente 
-    // gracias al onDelete: Cascade que tienes en tu esquema.
-    await prisma.pedido.delete({
-      where: { id: id }
-    });
-
+    await prisma.pedido.delete({ where: { id: id } });
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error("Error eliminando pedido:", error);
     return NextResponse.json({ error: "Error al eliminar el pedido" }, { status: 500 });
   }
 }
 
-// EDITAR PEDIDO (Estado y Método de Pago)
+// 🔥 ACTUALIZAR ORDEN COMPLETA (PUT)
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
     const body = await req.json();
-    const { estadoPago, metodoPagoId } = body;
+    const { cliente, cart, tasaBCV, totalUSD, totalVES, estadoPago, metodoPagoId, referencia } = body;
 
     const pedidoActualizado = await prisma.$transaction(async (tx) => {
-      const pedido = await tx.pedido.update({
-        where: { id },
-        data: { estadoPago }
+      // 1. Actualizar datos del cliente por si cambiaron el teléfono o nombre
+      const clienteDb = await tx.cliente.upsert({
+        where: { cedula: cliente.cedula },
+        update: { nombre: cliente.nombre, telefono: cliente.telefono },
+        create: { cedula: cliente.cedula, nombre: cliente.nombre, telefono: cliente.telefono }
       });
 
-      if (estadoPago === "PAGADO" && metodoPagoId) {
-        // Buscamos si ya tenía un pago registrado
-        const pagoExistente = await tx.pago.findFirst({ where: { pedidoId: id } });
-        
-        if (pagoExistente) {
-          await tx.pago.update({
-            where: { id: pagoExistente.id },
-            data: { metodoPagoId }
-          });
-        } else {
-          await tx.pago.create({
-            data: {
-              pedidoId: id,
-              metodoPagoId,
-              montoUSD: pedido.totalUSD,
-              montoVES: pedido.totalVES
-            }
-          });
+      // 2. Actualizar totales y estado de la orden principal
+      const pedido = await tx.pedido.update({
+        where: { id },
+        data: {
+          clienteId: clienteDb.id,
+          totalUSD,
+          totalVES,
+          tasaBCV,
+          estadoPago,
+          updatedAt: new Date()
         }
-      } else if (estadoPago === "PENDIENTE") {
-        // Si lo pasan a pendiente, eliminamos el registro del pago
-        await tx.pago.deleteMany({ where: { pedidoId: id } });
+      });
+
+      // 3. Borramos el carrito y pagos anteriores para evitar duplicados
+      await tx.detallePedido.deleteMany({ where: { pedidoId: id } });
+      await tx.pago.deleteMany({ where: { pedidoId: id } });
+
+      // 4. Reconstruimos el carrito nuevo
+      for (const item of cart) {
+        const detallePadre = await tx.detallePedido.create({
+          data: {
+            pedidoId: id,
+            productoId: item.producto.id,
+            cantidad: item.cantidad,
+            precioUnitario: item.precioUnitario,
+            subtotal: item.precioUnitario * item.cantidad
+          }
+        });
+
+        if (item.subItems && item.subItems.length > 0) {
+          const subItemsData = item.subItems.map((sub: any) => ({
+            pedidoId: id,
+            productoId: sub.producto.id,
+            cantidad: sub.cantidad * item.cantidad, 
+            precioUnitario: sub.precio,
+            subtotal: (sub.precio * sub.cantidad) * item.cantidad,
+            parentDetalleId: detallePadre.id
+          }));
+          await tx.detallePedido.createMany({ data: subItemsData });
+        }
+      }
+
+      // 5. Registramos el pago si aplica
+      if (estadoPago === "PAGADO" && metodoPagoId) {
+        await tx.pago.create({
+          data: {
+            pedidoId: id,
+            metodoPagoId,
+            montoUSD: totalUSD,
+            montoVES: totalVES,
+            referencia: referencia || null
+          }
+        });
       }
 
       return pedido;
     });
 
     return NextResponse.json({ success: true, pedido: pedidoActualizado }, { status: 200 });
+
   } catch (error) {
-    console.error("Error editando pedido:", error);
+    console.error("Error editando pedido completo:", error);
     return NextResponse.json({ error: "Error al editar el pedido" }, { status: 500 });
   }
 }

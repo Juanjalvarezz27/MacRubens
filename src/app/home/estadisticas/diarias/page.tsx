@@ -6,7 +6,6 @@ import { Loader2, Calendar, ChevronDown, ChevronUp, Pizza, User, Clock, CheckCir
 import { toast } from "react-toastify";
 import ResumenGraficoDia from "../../../components/estadisticas/ResumenGraficoDia";
 import ConfirmModal from "../../../components/ui/ConfirmModal";
-import EditPedidoModal from "../../../components/estadisticas/EditPedidoModal";
 
 interface Categoria { nombre: string; }
 interface Producto { nombre: string; categoria: Categoria; }
@@ -35,9 +34,7 @@ export default function EstadisticasDiariasPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedDetalles, setExpandedDetalles] = useState<Record<string, boolean>>({});
 
-  // Estados para los Modales
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
-  const [orderToEdit, setOrderToEdit] = useState<Pedido | null>(null);
 
   const fetchEstadisticas = async () => {
     setLoading(true);
@@ -64,7 +61,7 @@ export default function EstadisticasDiariasPage() {
       if (!res.ok) throw new Error("Error");
       toast.success("Orden eliminada correctamente");
       setOrderToDelete(null);
-      fetchEstadisticas(); // Recargamos las estadísticas
+      fetchEstadisticas(); 
     } catch (error) {
       toast.error("Hubo un problema al eliminar la orden");
     }
@@ -129,7 +126,6 @@ export default function EstadisticasDiariasPage() {
   return (
     <div className="w-full min-h-[calc(100vh-80px)] bg-[#FDF8F1] p-6 lg:p-10 overflow-y-auto">
       
-      {/* MODALES */}
       <ConfirmModal
         isOpen={!!orderToDelete}
         onClose={() => setOrderToDelete(null)}
@@ -141,14 +137,6 @@ export default function EstadisticasDiariasPage() {
         isDestructive={true}
       />
 
-      <EditPedidoModal 
-        isOpen={!!orderToEdit}
-        onClose={() => setOrderToEdit(null)}
-        pedido={orderToEdit}
-        onSuccess={fetchEstadisticas}
-      />
-
-      {/* HEADER */}
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div className="flex flex-col items-center lg:items-start space-y-2 w-full md:w-auto text-center md:text-left">
           <h1 className="text-5xl md:text-5xl font-black text-[#294C29] uppercase tracking-tighter leading-none">
@@ -160,7 +148,7 @@ export default function EstadisticasDiariasPage() {
           </p>
         </div>
         
-        <div className="bg-white px-6 py-4 rounded-4xl border border-[#294C29]/10 shadow-sm flex items-center gap-4 w-full md:w-auto justify-center">
+        <div className="bg-white px-6 py-4 rounded-[2rem] border border-[#294C29]/10 shadow-sm flex items-center gap-4 w-full md:w-auto justify-center">
           <div className="text-center px-4 border-r border-[#294C29]/10">
             <span className="block text-[10px] font-black uppercase tracking-widest text-[#294C29]/50">Órdenes Hoy</span>
             <span className="text-2xl font-black text-[#294C29]">{pedidos.length}</span>
@@ -191,7 +179,7 @@ export default function EstadisticasDiariasPage() {
               const detallesOrganizados = agruparDetalles(pedido.detalles);
 
               return (
-                <div key={pedido.id} className={`bg-white rounded-4xl border-2 transition-all shadow-sm overflow-hidden ${isPendiente ? "border-[#B43E17]/30" : "border-[#294C29]/5 hover:border-[#294C29]/20"}`}>
+                <div key={pedido.id} className={`bg-white rounded-[2rem] border-2 transition-all shadow-sm overflow-hidden ${isPendiente ? "border-[#B43E17]/30" : "border-[#294C29]/5 hover:border-[#294C29]/20"}`}>
                   
                   <div 
                     onClick={() => setExpandedId(isExpanded ? null : pedido.id)}
@@ -230,12 +218,15 @@ export default function EstadisticasDiariasPage() {
                           </span>
                         )}
 
-                        {/* BOTONES DE EDICIÓN Y ELIMINACIÓN */}
                         <div className="flex items-center gap-1 bg-[#FDF8F1] rounded-xl p-1">
+                          {/* NUEVO BOTÓN DE EDITAR: Te lleva a la caja en modo "edit" */}
                           <button 
-                            onClick={(e) => { e.stopPropagation(); setOrderToEdit(pedido); }}
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              router.push(`/home?pedidoId=${pedido.id}&action=edit`); 
+                            }}
                             className="w-8 h-8 rounded-lg flex items-center justify-center text-[#294C29]/50 hover:text-[#294C29] hover:bg-white transition-colors"
-                            title="Editar Pago"
+                            title="Editar Orden Completa"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
@@ -268,7 +259,7 @@ export default function EstadisticasDiariasPage() {
                           const isItemExpanded = expandedDetalles[detalle.id] || false;
 
                           return (
-                            <div key={detalle.id} className="bg-white p-6 rounded-4xl border border-[#294C29]/10 shadow-sm flex flex-col h-fit">
+                            <div key={detalle.id} className="bg-white p-6 rounded-[2rem] border border-[#294C29]/10 shadow-sm flex flex-col h-fit">
                               
                               <div className="mb-4 flex justify-between items-start gap-4">
                                 <h4 className="font-black text-[#294C29] text-[17px] uppercase tracking-tighter flex items-baseline gap-1.5">
@@ -302,7 +293,7 @@ export default function EstadisticasDiariasPage() {
 
                               <div className="flex justify-between items-end pt-5 border-t border-gray-100 mt-2">
                                 <div className="bg-[#FDF8F1] px-4 py-2 rounded-xl flex items-center justify-center border border-[#294C29]/5">
-                                   <span className="font-black text-sm uppercase tracking-widest text-[#294C29]/60">Cant: <span className="text-lg text-[#294C29] ml-1">{detalle.cantidad}</span></span>
+                                   <span className="font-black text-[#294C29] text-sm uppercase tracking-widest text-[#294C29]/60">Cant: <span className="text-lg text-[#294C29] ml-1">{detalle.cantidad}</span></span>
                                 </div>
                                 <div className="flex flex-col items-end">
                                   <span className="font-black text-[#294C29] text-[22px] leading-none">${itemTotalUSD.toFixed(2)}</span>

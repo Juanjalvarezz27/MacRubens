@@ -16,6 +16,7 @@ function POSContent() {
   
   const searchParams = useSearchParams();
   const pedidoPendienteId = searchParams.get("pedidoId");
+  const actionType = searchParams.get("action"); // Leemos si la acción es "edit"
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [cliente, setCliente] = useState<DatosCliente | null>(null);
@@ -27,12 +28,10 @@ function POSContent() {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   
-  // ESCUDO PROTECTOR CONTRA EL DOBLE RENDER DE REACT
   const initStarted = useRef(false);
 
   useEffect(() => {
     const initPOS = async () => {
-      // Si ya empezó a iniciar, cancelamos la segunda vuelta del Strict Mode
       if (initStarted.current) return;
       initStarted.current = true;
 
@@ -59,15 +58,16 @@ function POSContent() {
             }));
             
             setCart(reconstruido);
-            setStep(3); 
+            
+            // MAGIA AQUÍ: Si es edición vamos al Paso 2, si es solo pagar vamos al Paso 3
+            setStep(actionType === "edit" ? 2 : 3); 
             
             localStorage.setItem("macrubens_pedido_activo", pedidoPendienteId);
             window.history.replaceState(null, "", "/home");
             
-            // El Toast ahora solo saldrá una vez
-            toast.success("Orden recuperada correctamente");
+            toast.success(actionType === "edit" ? "Orden lista para ser editada" : "Orden recuperada correctamente");
           } else {
-            toast.error("No se pudo cargar la orden pendiente");
+            toast.error("No se pudo cargar la orden");
           }
         } catch (error) {
           toast.error("Error de conexión al cargar la orden");
@@ -89,7 +89,7 @@ function POSContent() {
     };
 
     if (!isHydrated) initPOS();
-  }, [pedidoPendienteId, isHydrated]);
+  }, [pedidoPendienteId, isHydrated, actionType]);
 
   useEffect(() => {
     if (isHydrated && !pedidoPendienteId) {
@@ -406,7 +406,6 @@ function POSContent() {
   );
 }
 
-// OBLIGATORIO: Envolver en Suspense porque usamos useSearchParams de Next.js
 export default function POSPage() {
   return (
     <Suspense fallback={
