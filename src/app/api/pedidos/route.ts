@@ -17,22 +17,25 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    // Ahora recibimos el estadoPago desde el frontend
     const { cliente, cart, tasaBCV, metodoPagoId, referencia, totalUSD, totalVES, estadoPago } = body;
 
     if (!cart || cart.length === 0) return NextResponse.json({ error: "El ticket está vacío" }, { status: 400 });
     
-    // Si es una orden pagada, exigimos el método de pago obligatoriamente
     if (estadoPago === "PAGADO" && !metodoPagoId) {
       return NextResponse.json({ error: "Falta el método de pago" }, { status: 400 });
     }
+
+    // MAGIA DE ZONA HORARIA: Forzamos la hora exacta de Venezuela
+    const now = new Date();
+    const venezuelaTimeString = now.toLocaleString("en-US", { timeZone: "America/Caracas" });
+    const venezuelaDate = new Date(venezuelaTimeString);
 
     const pedidoCreado = await prisma.$transaction(async (tx) => {
       
       const clienteDb = await tx.cliente.upsert({
         where: { cedula: cliente.cedula },
-        update: { nombre: cliente.nombre, telefono: cliente.telefono },
-        create: { cedula: cliente.cedula, nombre: cliente.nombre, telefono: cliente.telefono }
+        update: { nombre: cliente.nombre, telefono: cliente.telefono, updatedAt: venezuelaDate },
+        create: { cedula: cliente.cedula, nombre: cliente.nombre, telefono: cliente.telefono, createdAt: venezuelaDate, updatedAt: venezuelaDate }
       });
 
       const estado = await tx.estadoPedido.findUnique({
@@ -40,16 +43,18 @@ export async function POST(req: NextRequest) {
       });
       if (!estado) throw new Error("El estado 'Completado' no existe en la base de datos.");
 
-      // Crear el Pedido con el estado de pago correspondiente
+      // Insertamos la fecha forzada en el Pedido
       const pedido = await tx.pedido.create({
         data: {
           clienteId: clienteDb.id,
           usuarioId: usuarioId, 
           estadoId: estado.id,
-          estadoPago: estadoPago, // "PAGADO" o "PENDIENTE"
+          estadoPago: estadoPago, 
           totalUSD: totalUSD,
           totalVES: totalVES,
           tasaBCV: tasaBCV,
+          createdAt: venezuelaDate, // Sobrescribimos el default(now()) de Prisma
+          updatedAt: venezuelaDate  // Sobrescribimos el updatedAt
         }
       });
 
@@ -78,7 +83,6 @@ export async function POST(req: NextRequest) {
 
       await tx.detallePedido.createMany({ data: detallesData });
 
-      // SOLO creamos el pago si la orden está marcada como PAGADA
       if (estadoPago === "PAGADO") {
         await tx.pago.create({
           data: {
@@ -86,7 +90,8 @@ export async function POST(req: NextRequest) {
             metodoPagoId: metodoPagoId,
             montoUSD: totalUSD,
             montoVES: totalVES,
-            referencia: referencia || null
+            referencia: referencia || null,
+            createdAt: venezuelaDate // Sobrescribimos el default(now()) en el pago
           }
         });
       }
