@@ -5,6 +5,7 @@ import ClienteSetup, { DatosCliente } from "../components/ordenes/ClienteSetup";
 import MenuSetup, { Producto, SubItem, CartItem } from "../components/ordenes/MenuSetup";
 import useTasaBCV from "../../hooks/useTasaBCV";
 import { User, Pizza, CreditCard, ShoppingBag, ChevronUp, ChevronRight, X, Plus, Minus, Loader2, Edit3 } from "lucide-react";
+import ConfirmModal from "../components/ui/ConfirmModal"; 
 
 export default function POSPage() {
   const { tasa, loading: loadingTasa } = useTasaBCV();
@@ -16,6 +17,9 @@ export default function POSPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CartItem | null>(null);
+
+  // --- ESTADO PARA EL MODAL DE ELIMINACIÓN ---
+  const [idToDelete, setIdToDelete] = useState<string | null>(null);
 
   const handleClientConfirmed = (datos: DatosCliente) => {
     setCliente(datos);
@@ -78,8 +82,12 @@ export default function POSPage() {
     }));
   };
 
-  const removeFromCart = (uniqueId: string) => {
-    setCart(cart.filter(item => item.uniqueId !== uniqueId));
+  // --- FUNCIÓN PARA CONFIRMAR ELIMINACIÓN ---
+  const handleConfirmDelete = () => {
+    if (idToDelete) {
+      setCart(cart.filter(item => item.uniqueId !== idToDelete));
+      setIdToDelete(null);
+    }
   };
 
   const totalUSD = cart.reduce((sum, item) => sum + item.subtotal, 0);
@@ -87,6 +95,18 @@ export default function POSPage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-80px)] flex flex-col lg:flex-row bg-[#FDF8F1] overflow-hidden relative">
+
+      {/* MODAL DE CONFIRMACIÓN */}
+      <ConfirmModal 
+        isOpen={!!idToDelete}
+        onClose={() => setIdToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="¿Quitar producto?"
+        message="¿Estás seguro de que deseas eliminar este ítem del ticket?"
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        isDestructive={true}
+      />
 
       {/* LADO IZQUIERDO */}
       <div className="flex-1 flex flex-col h-full lg:h-[calc(100vh-80px)] overflow-y-auto p-4 lg:p-10 pb-28 lg:pb-10">
@@ -171,7 +191,7 @@ export default function POSPage() {
           <button onClick={() => setIsMobileCartOpen(false)} className="lg:hidden p-2 bg-[#FDF8F1] hover:bg-[#EADDCA] text-[#294C29] rounded-full transition-colors"><X className="w-6 h-6" /></button>
         </div>
 
-        {/* LISTA DE ITEMS (Más Grandes y con Tasa BCV) */}
+        {/* LISTA DE ITEMS */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 bg-[#FDF8F1]/50 lg:bg-transparent">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-[#294C29]/20">
@@ -186,7 +206,6 @@ export default function POSPage() {
                 return (
                   <div key={item.uniqueId} className="bg-white p-5 rounded-3xl border border-[#294C29]/10 shadow-sm relative group">
 
-                    {/* Fila Principal */}
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex-1">
                         <h4 className="font-black text-[#294C29] text-base leading-tight uppercase flex flex-wrap items-baseline gap-1">
@@ -202,13 +221,13 @@ export default function POSPage() {
                             <Edit3 className="w-4 h-4" />
                           </button>
                         )}
-                        <button onClick={() => removeFromCart(item.uniqueId)} className="p-1.5 text-[#294C29]/40 hover:text-[#B43E17] hover:bg-white rounded-md transition-colors" title="Eliminar Item">
+                        {/* CORRECCIÓN: Ahora llama a setIdToDelete en lugar de eliminar directamente */}
+                        <button onClick={() => setIdToDelete(item.uniqueId)} className="p-1.5 text-[#294C29]/40 hover:text-[#B43E17] hover:bg-white rounded-md transition-colors" title="Eliminar Item">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Hijos (Toppings/Extras) */}
                     {item.subItems.length > 0 && (
                       <div className="pl-3 border-l-2 border-[#294C29]/20 my-3 space-y-2">
                         {item.subItems.map((sub, idx) => (
@@ -222,7 +241,6 @@ export default function POSPage() {
                       </div>
                     )}
 
-                    {/* Controles y Subtotal */}
                     <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#294C29]/5">
                       <div className="flex items-center gap-3 bg-[#FDF8F1] rounded-xl p-1 border border-[#294C29]/5">
                         <button onClick={() => updateQuantity(item.uniqueId, -1)} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-[#B43E17] hover:text-white shadow-sm transition-colors"><Minus className="w-4 h-4" /></button>
