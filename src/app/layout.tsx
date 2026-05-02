@@ -33,7 +33,7 @@ export default function RootLayout({
       lang="es"
       className={`${poppins.variable} ${anton.variable} h-full antialiased`}
     >
-      <body className={`${poppins.className} min-h-full flex flex-col bg-[#F6E4C9]`}>
+      <body className={`${poppins.className} min-h-full flex flex-col bg-[#FDF8F1]`}>
         {children}
         
         {/* Contenedor Global de Alertas */}

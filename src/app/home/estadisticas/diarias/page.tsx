@@ -148,7 +148,7 @@ export default function EstadisticasDiariasPage() {
           </p>
         </div>
         
-        <div className="bg-white px-6 py-4 rounded-[2rem] border border-[#294C29]/10 shadow-sm flex items-center gap-4 w-full md:w-auto justify-center">
+        <div className="bg-white px-6 py-4 rounded-4xl border border-[#294C29]/10 shadow-sm flex items-center gap-4 w-full md:w-auto justify-center">
           <div className="text-center px-4 border-r border-[#294C29]/10">
             <span className="block text-[10px] font-black uppercase tracking-widest text-[#294C29]/50">Órdenes Hoy</span>
             <span className="text-2xl font-black text-[#294C29]">{pedidos.length}</span>
@@ -179,7 +179,7 @@ export default function EstadisticasDiariasPage() {
               const detallesOrganizados = agruparDetalles(pedido.detalles);
 
               return (
-                <div key={pedido.id} className={`bg-white rounded-[2rem] border-2 transition-all shadow-sm overflow-hidden ${isPendiente ? "border-[#B43E17]/30" : "border-[#294C29]/5 hover:border-[#294C29]/20"}`}>
+                <div key={pedido.id} className={`bg-white rounded-4xl border-2 transition-all shadow-sm overflow-hidden ${isPendiente ? "border-[#B43E17]/30" : "border-[#294C29]/5 hover:border-[#294C29]/20"}`}>
                   
                   <div 
                     onClick={() => setExpandedId(isExpanded ? null : pedido.id)}
@@ -259,7 +259,7 @@ export default function EstadisticasDiariasPage() {
                           const isItemExpanded = expandedDetalles[detalle.id] || false;
 
                           return (
-                            <div key={detalle.id} className="bg-white p-6 rounded-[2rem] border border-[#294C29]/10 shadow-sm flex flex-col h-fit">
+                            <div key={detalle.id} className="bg-white p-6 rounded-4xl border border-[#294C29]/10 shadow-sm flex flex-col h-fit">
                               
                               <div className="mb-4 flex justify-between items-start gap-4">
                                 <h4 className="font-black text-[#294C29] text-[17px] uppercase tracking-tighter flex items-baseline gap-1.5">
@@ -293,7 +293,7 @@ export default function EstadisticasDiariasPage() {
 
                               <div className="flex justify-between items-end pt-5 border-t border-gray-100 mt-2">
                                 <div className="bg-[#FDF8F1] px-4 py-2 rounded-xl flex items-center justify-center border border-[#294C29]/5">
-                                   <span className="font-black text-[#294C29] text-sm uppercase tracking-widest text-[#294C29]/60">Cant: <span className="text-lg text-[#294C29] ml-1">{detalle.cantidad}</span></span>
+                                   <span className="font-black text-sm uppercase tracking-widest text-[#294C29]/60">Cant: <span className="text-lg text-[#294C29] ml-1">{detalle.cantidad}</span></span>
                                 </div>
                                 <div className="flex flex-col items-end">
                                   <span className="font-black text-[#294C29] text-[22px] leading-none">${itemTotalUSD.toFixed(2)}</span>
