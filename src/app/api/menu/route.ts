@@ -8,17 +8,19 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     // 1. Obtenemos todos los productos incluyendo su categoría
+    // Ordenados por precioBase de menor a mayor (asc)
     const productos = await prisma.producto.findMany({
       where: { activo: true },
       include: {
         categoria: true
       },
       orderBy: {
-        nombre: 'asc'
+        precioBase: 'asc' // <--- Cambio aquí: de 'nombre' a 'precioBase'
       }
     });
 
     // 2. Obtenemos las categorías para los selectores del frontend
+    // Las categorías suelen quedar mejor ordenadas alfabéticamente
     const categorias = await prisma.categoriaProducto.findMany({
       orderBy: { nombre: 'asc' }
     });
