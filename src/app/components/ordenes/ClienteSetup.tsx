@@ -86,12 +86,13 @@ export default function ClienteSetup({ onClientConfirmed, clientePrevio }: Clien
               type="text"
               value={cedula}
               onChange={(e) => {
-                setCedula(e.target.value);
+                // Remueve todo lo que NO sea número
+                const valorLimpiado = e.target.value.replace(/\D/g, "");
+                setCedula(valorLimpiado);
                 if (isFound !== null) setIsFound(null); // Resetea si cambia el texto
               }}
               onKeyDown={(e) => e.key === "Enter" && buscarCliente()}
               placeholder="Ej. 24123456"
-              // Fuente cambiada de font-black a font-medium/semibold
               className="w-full bg-[#FDF8F1] text-[#294C29] font-semibold text-lg lg:text-xl rounded-2xl py-4 pl-5 pr-16 focus:outline-none focus:ring-2 focus:ring-[#B43E17]/20 border border-[#294C29]/10 focus:border-[#B43E17]/50 transition-all placeholder:text-[#294C29]/30 placeholder:font-normal"
             />
             <button
@@ -115,7 +116,11 @@ export default function ClienteSetup({ onClientConfirmed, clientePrevio }: Clien
               <input
                 type="text"
                 value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
+                onChange={(e) => {
+                  // Remueve todos los números
+                  const valorLimpiado = e.target.value.replace(/\d/g, "");
+                  setNombre(valorLimpiado);
+                }}
                 disabled={isFound}
                 placeholder="Nombre del cliente"
                 className="w-full bg-white text-[#294C29] font-medium text-lg rounded-2xl py-4 px-5 focus:outline-none border border-[#294C29]/10 focus:border-[#B43E17]/50 transition-all disabled:bg-[#FDF8F1] disabled:text-[#294C29]/60 disabled:border-transparent"
@@ -131,7 +136,11 @@ export default function ClienteSetup({ onClientConfirmed, clientePrevio }: Clien
                 <input
                   type="text"
                   value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
+                  onChange={(e) => {
+                    // Remueve todas las letras (permite números, guiones o símbolos como + para códigos de área)
+                    const valorLimpiado = e.target.value.replace(/[a-zA-Z]/g, "");
+                    setTelefono(valorLimpiado);
+                  }}
                   disabled={isFound}
                   placeholder="0414-1234567"
                   className="w-full bg-white text-[#294C29] font-medium text-lg rounded-2xl py-4 pl-12 pr-5 focus:outline-none border border-[#294C29]/10 focus:border-[#B43E17]/50 transition-all disabled:bg-[#FDF8F1] disabled:text-[#294C29]/60 disabled:border-transparent"
