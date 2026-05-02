@@ -289,7 +289,7 @@ export default function POSPage() {
 
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex-1">
-                        <h4 className="font-black text-[#294C29] text-base leading-tight uppercase flex flex-wrap items-baseline gap-1">
+                        <h4 className="font-black text-[#294C29] text-lg leading-tight uppercase flex flex-wrap items-baseline gap-1">
                           <span className="text-[#B43E17]">{item.cantidad}x</span>
                           {item.producto.nombre}
                         </h4>
@@ -311,9 +311,9 @@ export default function POSPage() {
                     {item.subItems.length > 0 && (
                       <div className="pl-3 border-l-2 border-[#294C29]/20 my-3 space-y-2">
                         {item.subItems.map((sub, idx) => (
-                          <div key={idx} className="flex flex-col text-[13px] font-bold text-[#294C29]">
+                          <div key={idx} className="flex flex-col text-[15px] font-bold text-[#294C29]">
                             <span>+ {sub.cantidad}x {sub.producto.nombre}</span>
-                            <span className="text-[11px] text-[#294C29]/70 font-semibold">
+                            <span className="text-[12px] text-[#294C29]/70 font-semibold">
                               ${sub.precio.toFixed(2)} <span className="text-[#294C29]/30">|</span> Bs. {(sub.precio * tasaActual).toFixed(2)}
                             </span>
                           </div>
@@ -329,7 +329,7 @@ export default function POSPage() {
                       </div>
                       <div className="flex flex-col items-end">
                         <span className="font-black text-[#294C29] text-lg leading-none">${item.subtotal.toFixed(2)}</span>
-                        <span className="text-xs font-bold text-[#B43E17] mt-1">Bs. {(item.subtotal * tasaActual).toFixed(2)}</span>
+                        <span className="text-sm font-bold text-[#B43E17] mt-1">Bs. {(item.subtotal * tasaActual).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
