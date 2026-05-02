@@ -38,7 +38,7 @@ interface MenuSetupProps {
   onCancelEdit?: () => void;
 }
 
-// 🔥 Componente Select Personalizado (Reemplaza el <select> y <option> nativos)
+// Componente Select Personalizado (Reemplaza el <select> y <option> nativos)
 const CustomSelect = ({ value, options, onChange, placeholder = "Seleccionar..." }: { value: string, options: {value: string, label: string}[], onChange: (val: string) => void, placeholder?: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selected = options.find(o => o.value === value);
@@ -55,9 +55,10 @@ const CustomSelect = ({ value, options, onChange, placeholder = "Seleccionar..."
 
       {isOpen && (
         <>
-          {/* Overlay invisible para cerrar al hacer click afuera */}
-          <div className="fixed inset-0 z-120" onClick={() => setIsOpen(false)}></div>
-          <div className="absolute z-130 w-full mt-2 bg-white border border-[#294C29]/10 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+          {/* Overlay invisible para cerrar al hacer click afuera (Ajuste z-index) */}
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>
+          {/* Menú desplegable (Ajuste z-index para no interferir con scroll inferior) */}
+          <div className="absolute z-50 w-full mt-2 bg-white border border-[#294C29]/10 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
             {options.map(opt => (
               <div 
                 key={opt.value}
@@ -188,10 +189,12 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
   };
 
   return (
-    <div className="w-full flex flex-col h-full animate-in fade-in zoom-in-95 duration-500 relative z-0">
+    // CORRECCIÓN 1: Contenedor principal sin relative ni z-0 para evitar invasión al ticket
+    <div className="w-full flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
 
       {/* TABS CATEGORÍAS - VERSIÓN MOBILE (Custom Select) */}
-      <div className="md:hidden mb-4 px-1 relative z-20">
+      {/* CORRECCIÓN 3.1: Reducción de Z-index excesivo para no colisionar con header modal */}
+      <div className="md:hidden mb-4 px-1 relative z-30">
         {!loading && categoriasPrincipales.length > 0 && (
           <CustomSelect 
             value={activeCategory}
@@ -267,10 +270,12 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
 
       {/* MODAL CONSTRUCTOR DE PIZZA */}
       {builderOpen && pizzaBase && (
-        <div className="fixed inset-0 z-100 flex justify-end bg-[#1B361B]/80 animate-in fade-in duration-200">
+        // CORRECCIÓN 1.1: Z-index del modal reducido a 50 para no pisar el ticket lateral (que debe usar z-40 o menos)
+        <div className="fixed inset-0 z-50 flex justify-end bg-[#1B361B]/80 animate-in fade-in duration-200">
           <div className="w-full sm:w-112.5 bg-[#FDF8F1] h-full shadow-2xl flex flex-col animate-in slide-in-from-right-full duration-300">
 
-            <div className="p-6 bg-white border-b border-[#294C29]/10 flex justify-between items-center relative z-10">
+            {/* CORRECCIÓN 3.2: Reducción de Z-index del header para no interferir con clics inferiores si el select se abre */}
+            <div className="p-6 bg-white border-b border-[#294C29]/10 flex justify-between items-center relative z-20">
               <div>
                 <h2 className="text-xl font-black text-[#294C29] uppercase tracking-tighter">{itemToEdit ? "Editar Pizza" : "Armar Pizza"}</h2>
               </div>
@@ -279,8 +284,8 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 relative z-0">
 
-              {/* Uso del Nuevo Custom Select en lugar de <select> HTML */}
-              <div className="space-y-2 relative z-50">
+              {/* CORRECCIÓN 3.3: Select con z-30 para abrirse sobre el contenido pero bajo el header si este tuviera dropdown propio */}
+              <div className="space-y-2 relative z-30">
                 <label className="text-[10px] font-black text-[#294C29]/60 uppercase tracking-widest">Base Seleccionada</label>
                 <CustomSelect 
                   value={pizzaBase.id}
@@ -339,7 +344,8 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
 
             </div>
 
-            <div className="p-6 bg-white border-t border-[#294C29]/10 relative z-10">
+            {/* CORRECCIÓN 2: Padded vertical reducido (p-6 -> p-4) para asegurar accesibilidad en mobile */}
+            <div className="p-4 bg-white border-t border-[#294C29]/10 relative z-10">
               <button
                 onClick={confirmarPizza}
                 className="w-full bg-[#B43E17] hover:bg-[#9F280A] text-[#F6E4C9] py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-md flex justify-center items-center gap-2"
