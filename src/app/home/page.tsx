@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react"; 
+import { useState, useEffect } from "react";
 import ClienteSetup, { DatosCliente } from "../components/ordenes/ClienteSetup";
 import MenuSetup, { Producto, SubItem, CartItem } from "../components/ordenes/MenuSetup";
+import PagoSetup from "../components/ordenes/PagoSetup";
 import useTasaBCV from "../../hooks/useTasaBCV";
-import { User, Pizza, CreditCard, ShoppingBag, ChevronUp, ChevronRight, X, Plus, Minus, Loader2, Edit3 } from "lucide-react";
+import { User, Pizza, CreditCard, ShoppingBag, ChevronUp, ChevronRight, X, Plus, Minus, Loader2, Edit3, Trash2 } from "lucide-react";
 import ConfirmModal from "../components/ui/ConfirmModal";
+import { toast } from "react-toastify";
 
 export default function POSPage() {
   const { tasa, loading: loadingTasa } = useTasaBCV();
@@ -13,27 +15,71 @@ export default function POSPage() {
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [cliente, setCliente] = useState<DatosCliente | null>(null);
-
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CartItem | null>(null);
 
-  // --- ESTADO PARA EL MODAL DE ELIMINACIÓN ---
+  // Estados para Modales
   const [idToDelete, setIdToDelete] = useState<string | null>(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false); //  Modal para cancelar todo
 
-  // --- NUEVO: Bloqueamos el scroll del fondo cuando el carrito móvil está abierto ---
+  //  MAGIA SENIOR: Autoguardado e Hidratación
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // 1. Cargar datos desde LocalStorage al iniciar
   useEffect(() => {
-    if (isMobileCartOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
+    try {
+      const savedCart = localStorage.getItem("macrubens_cart");
+      const savedCliente = localStorage.getItem("macrubens_cliente");
+      const savedStep = localStorage.getItem("macrubens_step");
+
+      if (savedCart) setCart(JSON.parse(savedCart));
+      if (savedCliente) setCliente(JSON.parse(savedCliente));
+      if (savedStep) setStep(Number(savedStep) as 1 | 2 | 3);
+    } catch (e) {
+      console.error("Error cargando el borrador de la orden", e);
     }
-    
-    // Limpieza al desmontar
-    return () => {
-      document.body.style.overflow = "auto";
-    };
+    setIsHydrated(true);
+  }, []);
+
+  // 2. Guardar datos en vivo cada vez que cambien (solo si ya hidratamos)
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem("macrubens_cart", JSON.stringify(cart));
+      localStorage.setItem("macrubens_step", step.toString());
+      if (cliente) {
+        localStorage.setItem("macrubens_cliente", JSON.stringify(cliente));
+      } else {
+        localStorage.removeItem("macrubens_cliente");
+      }
+    }
+  }, [cart, cliente, step, isHydrated]);
+
+  useEffect(() => {
+    if (isMobileCartOpen) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "auto";
+    return () => { document.body.style.overflow = "auto"; };
   }, [isMobileCartOpen]);
+
+  // Función para vaciar completamente la caja (Se usa al Pagar y al Cancelar)
+  const resetCaja = () => {
+    setCart([]);
+    setCliente(null);
+    setStep(1);
+    setIsMobileCartOpen(false);
+    setEditingItem(null);
+    
+    // Limpiar memoria
+    localStorage.removeItem("macrubens_cart");
+    localStorage.removeItem("macrubens_cliente");
+    localStorage.removeItem("macrubens_step");
+  };
+
+  const handleCancelOrderConfirm = () => {
+    resetCaja();
+    setIsCancelModalOpen(false);
+    toast.info("La orden ha sido cancelada y borrada.");
+  };
 
   const handleClientConfirmed = (datos: DatosCliente) => {
     setCliente(datos);
@@ -52,11 +98,7 @@ export default function POSPage() {
       setCart(cart.map(item => {
         if (item.uniqueId === editId) {
           return {
-            ...item,
-            producto,
-            esPequena,
-            subItems,
-            precioUnitario,
+            ...item, producto, esPequena, subItems, precioUnitario,
             subtotal: calcularSubtotalItem(precioUnitario, subItems, item.cantidad)
           };
         }
@@ -106,10 +148,18 @@ export default function POSPage() {
   const totalUSD = cart.reduce((sum, item) => sum + item.subtotal, 0);
   const totalVES = totalUSD * tasaActual;
 
+  // Evita el destello de la interfaz antes de cargar el localstorage
+  if (!isHydrated) return (
+    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-[#FDF8F1]">
+      <Loader2 className="w-12 h-12 animate-spin text-[#B43E17]" />
+      <p className="mt-4 font-black text-[#294C29] uppercase tracking-widest text-xs">Restaurando sesión...</p>
+    </div>
+  );
+
   return (
     <div className="w-full min-h-[calc(100vh-80px)] flex flex-col lg:flex-row bg-[#FDF8F1] overflow-hidden relative">
 
-      {/* MODAL DE CONFIRMACIÓN */}
+      {/* MODAL PARA ELIMINAR ITEM */}
       <ConfirmModal
         isOpen={!!idToDelete}
         onClose={() => setIdToDelete(null)}
@@ -118,6 +168,18 @@ export default function POSPage() {
         message="¿Estás seguro de que deseas eliminar este ítem del ticket?"
         confirmText="Eliminar"
         cancelText="Cancelar"
+        isDestructive={true}
+      />
+
+      {/*  MODAL PARA CANCELAR TODA LA ORDEN */}
+      <ConfirmModal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        onConfirm={handleCancelOrderConfirm}
+        title="¿Cancelar Orden?"
+        message="¿Estás seguro de que deseas borrar toda la orden y los datos del cliente actual? Esta acción no se puede deshacer."
+        confirmText="Cancelar"
+        cancelText="Volver"
         isDestructive={true}
       />
 
@@ -133,9 +195,7 @@ export default function POSPage() {
             {loadingTasa ? (
               <Loader2 className="w-3 h-3 animate-spin text-[#B43E17]" />
             ) : (
-              <span className="font-black text-sm text-[#B43E17]">
-                Bs. {tasaActual.toFixed(2)}
-              </span>
+              <span className="font-black text-sm text-[#B43E17]">Bs. {tasaActual.toFixed(2)}</span>
             )}
           </div>
         </div>
@@ -166,7 +226,10 @@ export default function POSPage() {
                 onCancelEdit={() => setEditingItem(null)}
               />
               {cart.length > 0 && (
-                <div className="hidden lg:flex justify-end mt-6">
+                <div className="hidden lg:flex justify-end mt-6 gap-3">
+                  <button onClick={() => setIsCancelModalOpen(true)} className="bg-white hover:bg-[#B43E17]/10 text-[#B43E17] border border-[#B43E17]/30 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-sm flex items-center gap-2">
+                    <Trash2 className="w-4 h-4" /> Cancelar
+                  </button>
                   <button onClick={() => setStep(3)} className="bg-[#B43E17] hover:bg-[#9F280A] text-[#F6E4C9] px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-md flex items-center gap-3">
                     Ir a Pagar <ChevronRight className="w-5 h-5" />
                   </button>
@@ -174,11 +237,17 @@ export default function POSPage() {
               )}
             </>
           )}
-          {step === 3 && (
-            <div className="w-full text-center p-10 border-2 border-dashed border-[#B43E17]/20 rounded-[2.5rem]">
-              <h2 className="text-2xl font-black text-[#B43E17] uppercase tracking-tighter">Módulo de Pago</h2>
-              <p className="text-[#B43E17]/50 font-medium text-sm">Paso final (Próximo desarrollo).</p>
-            </div>
+          {step === 3 && cliente && (
+            <PagoSetup 
+              cliente={cliente}
+              cart={cart}
+              tasaBCV={tasaActual}
+              totalUSD={totalUSD}
+              totalVES={totalVES}
+              onVolver={() => setStep(2)}
+              onSuccess={resetCaja} // El éxito limpia la caja y reinicia
+              onCancelOrder={() => setIsCancelModalOpen(true)} // Pasamos la función al componente hijo
+            />
           )}
         </div>
       </div>
@@ -204,8 +273,6 @@ export default function POSPage() {
           <button onClick={() => setIsMobileCartOpen(false)} className="lg:hidden p-2 bg-[#FDF8F1] hover:bg-[#EADDCA] text-[#294C29] rounded-full transition-colors"><X className="w-6 h-6" /></button>
         </div>
 
-        {/* LISTA DE ITEMS */}
-        {/* --- NUEVO: Agregamos "overscroll-contain" aquí --- */}
         <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-4 bg-[#FDF8F1]/50 lg:bg-transparent">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-[#294C29]/20">
@@ -272,7 +339,6 @@ export default function POSPage() {
           )}
         </div>
 
-        {/* TOTALES */}
         <div className="p-6 bg-white border-t border-[#294C29]/10 pb-8 lg:pb-6">
           <div className="flex justify-between items-end mb-6">
             <div>
