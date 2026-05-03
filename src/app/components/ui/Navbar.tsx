@@ -18,11 +18,12 @@ export default function Navbar() {
 
   const navLinks = [
     { name: "Órdenes", href: "/home", icon: Pizza },
-    { name: "Clientes", href: "/home/clientes", icon: Users },
     { name: "Est. Diarias", href: "/home/estadisticas/diarias", icon: BarChart3 },
-    { name: "Est. Generales", href: "/home/estadisticas/generales", icon: LineChart },
-    { name: "Menú y Precios", href: "/home/configuracion", icon: Settings },
     { name: "Cierre Diario", href: "/home/cierre", icon: Wallet },
+    { name: "Est. Generales", href: "/home/estadisticas/generales", icon: LineChart },
+    { name: "Clientes", href: "/home/clientes", icon: Users },
+    { name: "Menú y Precios", href: "/home/configuracion", icon: Settings },
+
   ];
 
   const handleLogout = () => {
