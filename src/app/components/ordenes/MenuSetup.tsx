@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Minus, Pizza, Coffee, Tag, X, Check, ChevronDown, Truck } from "lucide-react";
 import { toast } from "react-toastify";
-import DeliveryModal from "./DeliveryModal"; 
+import DeliveryModal from "./DeliveryModal";
 
 export interface Categoria { id: string; nombre: string; }
 export interface Producto {
@@ -44,7 +44,7 @@ const CustomSelect = ({ value, options, onChange, placeholder = "Seleccionar..."
 
   return (
     <div className="relative w-full">
-      <div 
+      <div
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full bg-white text-[#294C29] font-black text-sm rounded-2xl py-4 pl-4 pr-12 border-2 ${isOpen ? 'border-[#B43E17]' : 'border-[#294C29]/10'} shadow-sm cursor-pointer transition-colors hover:border-[#294C29]/30 flex justify-between items-center`}
       >
@@ -57,7 +57,7 @@ const CustomSelect = ({ value, options, onChange, placeholder = "Seleccionar..."
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>
           <div className="absolute z-50 w-full mt-2 bg-white border border-[#294C29]/10 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
             {options.map(opt => (
-              <div 
+              <div
                 key={opt.value}
                 onClick={() => {
                   onChange(opt.value);
@@ -88,7 +88,6 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
   const [deliveryProduct, setDeliveryProduct] = useState<Producto | null>(null);
 
-  // --- CORRECCIÓN: BLOQUEO DE SCROLL DEL BODY ---
   useEffect(() => {
     if (builderOpen || deliveryModalOpen) {
       document.body.style.overflow = "hidden";
@@ -102,7 +101,6 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
     fetchMenu();
   }, []);
 
-  // --- CORRECCIÓN: RESET DE ESTADOS AL EDITAR ---
   useEffect(() => {
     if (itemToEdit) {
       setPizzaBase(itemToEdit.producto);
@@ -137,7 +135,8 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
 
   const handleSelectPizza = (producto: Producto) => {
     setPizzaBase(producto);
-    setEsPequena(false);
+    // AUTO-DETECCIÓN: Si el nombre incluye "pequeña", es pequeña
+    setEsPequena(producto.nombre.toLowerCase().includes("pequeñ"));
     setSubItems([]);
     setBuilderOpen(true);
   };
@@ -159,7 +158,9 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
   const handleUpdateSubItem = (producto: Producto, delta: number) => {
     setSubItems(prev => {
       const existe = prev.find(item => item.producto.id === producto.id);
-      const precioUnitario = esPequena && producto.precioPequena ? producto.precioPequena : producto.precioBase;
+      // Usa precioPequena si existe y la base activa es pequeña
+      const precioUnitario = esPequena && producto.precioPequena != null ? producto.precioPequena : producto.precioBase;
+      
       if (existe) {
         const nuevaCantidad = existe.cantidad + delta;
         if (nuevaCantidad <= 0) return prev.filter(item => item.producto.id !== producto.id);
@@ -174,8 +175,8 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
   const cerrarModal = () => {
     setBuilderOpen(false);
     setPizzaBase(null);
-    setSubItems([]); // Reset local
-    if (onCancelEdit) onCancelEdit(); // Limpia el estado en el padre para permitir re-editar
+    setSubItems([]); 
+    if (onCancelEdit) onCancelEdit(); 
   };
 
   const confirmarPizza = () => {
@@ -186,11 +187,11 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
 
   return (
     <div className="w-full flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
-      
+
       {/* TABS CATEGORÍAS - MOBILE */}
       <div className="md:hidden mb-4 px-1 relative z-30">
         {!loading && categoriasPrincipales.length > 0 && (
-          <CustomSelect 
+          <CustomSelect
             value={activeCategory}
             options={categoriasPrincipales.map(cat => ({ value: cat.id, label: cat.nombre }))}
             onChange={(val) => setActiveCategory(val)}
@@ -254,10 +255,10 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
         })}
       </div>
 
-      <DeliveryModal 
-        isOpen={deliveryModalOpen} 
-        onClose={() => setDeliveryModalOpen(false)} 
-        onConfirm={confirmarDelivery} 
+      <DeliveryModal
+        isOpen={deliveryModalOpen}
+        onClose={() => setDeliveryModalOpen(false)}
+        onConfirm={confirmarDelivery}
       />
 
       {/* MODAL CONSTRUCTOR DE PIZZA */}
@@ -270,48 +271,37 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
               <button onClick={cerrarModal} className="p-2 bg-[#FDF8F1] hover:bg-[#EADDCA] text-[#294C29] rounded-full"><X className="w-5 h-5" /></button>
             </div>
 
-            {/* --- CORRECCIÓN: OVERSCROLL-CONTAIN PARA EL TICKET/BUILDER --- */}
             <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-4 space-y-6 relative z-0">
-
+              
               <div className="space-y-2 relative z-30">
                 <label className="text-[12px] font-black text-[#294C29]/80 uppercase tracking-widest">Base Seleccionada</label>
-                <CustomSelect 
+                <CustomSelect
                   value={pizzaBase.id}
                   options={basesDisponibles.map(b => ({ value: b.id, label: `${b.nombre} ($${b.precioBase.toFixed(2)})` }))}
                   onChange={(val) => {
                     const nuevaBase = basesDisponibles.find(p => p.id === val);
-                    if (nuevaBase) setPizzaBase(nuevaBase);
+                    if (nuevaBase) {
+                      setPizzaBase(nuevaBase);
+                      // Re-evaluamos si es pequeña al cambiar de base en el dropdown
+                      setEsPequena(nuevaBase.nombre.toLowerCase().includes("pequeñ"));
+                      setSubItems([]); // Limpiamos adicionales porque los precios cambian
+                    }
                   }}
                 />
               </div>
 
-              {pizzaBase.precioPequena && (
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-[#294C29]/60 uppercase tracking-widest">Tamaño de la Pizza</label>
-                  <div className="flex gap-3">
-                    <button onClick={() => { setEsPequena(false); setSubItems([]); }} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all ${!esPequena ? "bg-[#294C29] text-[#F6E4C9] border-[#294C29]" : "bg-white text-[#294C29] border-[#294C29]/10"}`}>
-                      Normal (${pizzaBase.precioBase})
-                    </button>
-                    <button onClick={() => { setEsPequena(true); setSubItems([]); }} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all ${esPequena ? "bg-[#B43E17] text-[#F6E4C9] border-[#B43E17]" : "bg-white text-[#294C29] border-[#294C29]/10"}`}>
-                      Pequeña (${pizzaBase.precioPequena})
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* --- SECCIÓN ADICIONALES Y EXTRAS SEPARADOS --- */}
-              
               {/* 1. SECCIÓN ADICIONALES (Toppings) */}
               {toppingsDisponibles.length > 0 && (
-                <div className="space-y-4">
+                <div className="space-y-4 pt-2">
                   <label className="text-[12px] font-black text-[#294C29]/80 uppercase tracking-widest flex items-center gap-2">
                     <Tag className="w-3 h-3" /> Adicionales (Opcional)
                   </label>
                   <div className="space-y-2">
                     {toppingsDisponibles.map(item => {
-                      const precioActual = esPequena && item.precioPequena ? item.precioPequena : item.precioBase;
+                      const precioActual = esPequena && item.precioPequena != null ? item.precioPequena : item.precioBase;
                       const subItemSeleccionado = subItems.find(s => s.producto.id === item.id);
                       const cantidad = subItemSeleccionado?.cantidad || 0;
+                      
                       return (
                         <div key={item.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${cantidad > 0 ? "bg-white border-[#B43E17]/30 shadow-sm" : "bg-[#FDF8F1] border-[#294C29]/10"}`}>
                           <div>
@@ -338,9 +328,10 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
                   </label>
                   <div className="space-y-2">
                     {extrasDisponibles.map(item => {
-                      const precioActual = esPequena && item.precioPequena ? item.precioPequena : item.precioBase;
+                      const precioActual = esPequena && item.precioPequena != null ? item.precioPequena : item.precioBase;
                       const subItemSeleccionado = subItems.find(s => s.producto.id === item.id);
                       const cantidad = subItemSeleccionado?.cantidad || 0;
+                      
                       return (
                         <div key={item.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${cantidad > 0 ? "bg-white border-[#B43E17]/30 shadow-sm" : "bg-[#FDF8F1] border-[#294C29]/10"}`}>
                           <div>
@@ -358,7 +349,6 @@ export default function MenuSetup({ onAddToCart, itemToEdit, onCancelEdit }: Men
                   </div>
                 </div>
               )}
-              {/* --- FIN DE SECCIÓN ADICIONALES Y EXTRAS SEPARADOS --- */}
 
             </div>
 

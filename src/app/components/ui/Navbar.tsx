@@ -66,7 +66,7 @@ export default function Navbar() {
             >
               <div className="relative w-14 h-14 drop-shadow-md">
                 <Image
-                  src="/Logo.png"
+                  src="/Logo1.png"
                   alt="Logo Ruben's"
                   fill
                   className="object-contain"

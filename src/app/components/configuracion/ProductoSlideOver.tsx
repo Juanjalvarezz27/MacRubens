@@ -14,7 +14,7 @@ interface ProductoSlideOverProps {
   onClose: () => void;
   categorias: Categoria[];
   defaultCategoriaId: string;
-  productoAEditar?: any | null; // Nueva prop para la edición
+  productoAEditar?: any | null; 
   onSuccess: (producto: any, isEdit: boolean) => void;
 }
 
