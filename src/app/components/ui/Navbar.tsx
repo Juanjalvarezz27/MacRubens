@@ -5,18 +5,41 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { 
-  Menu, X, Pizza, Users, Settings, 
-  Wallet, BarChart3, LineChart, LogOut, UserCircle 
+import {
+  Menu,
+  X,
+  Pizza,
+  Users,
+  Settings,
+  Wallet,
+  BarChart3,
+  LineChart,
+  LogOut,
+  UserCircle,
+  ChevronDown,
 } from "lucide-react";
 import ConfirmModal from "../../components/ui/ConfirmModal";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const pathname = usePathname();
 
-  const navLinks = [
+  const mainLinks = [
+    { name: "Órdenes", href: "/home", icon: Pizza },
+    { name: "Pendientes", href: "/home/pendientes", icon: BarChart3 },
+    { name: "Cierre Diario", href: "/home/cierre", icon: Wallet },
+    { name: "Clientes", href: "/home/clientes", icon: Users },
+    { name: "Menú y Precios", href: "/home/configuracion", icon: Settings },
+  ];
+
+  const statsLinks = [
+    { name: "Est. Diarias", href: "/home/estadisticas/diarias", icon: BarChart3 },
+    { name: "Est. Generales", href: "/home/estadisticas/generales", icon: LineChart },
+  ];
+
+  const mobileLinks = [
     { name: "Órdenes", href: "/home", icon: Pizza },
     { name: "Est. Diarias", href: "/home/estadisticas/diarias", icon: BarChart3 },
     { name: "Pendientes", href: "/home/pendientes", icon: BarChart3 },
@@ -24,7 +47,6 @@ export default function Navbar() {
     { name: "Est. Generales", href: "/home/estadisticas/generales", icon: LineChart },
     { name: "Clientes", href: "/home/clientes", icon: Users },
     { name: "Menú y Precios", href: "/home/configuracion", icon: Settings },
-
   ];
 
   const handleLogout = () => {
@@ -33,23 +55,29 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-[#294C29] text-[#F6E4C9] sticky top-0 z-50">
+      <nav className="bg-[#294C29] text-[#F6E4C9] sticky top-0 z-50 shadow-lg">
         <div className="w-full px-4 md:px-8">
           <div className="flex items-center justify-between h-24">
             
-            {/* LOGO Y MARCA */}
-            <Link href="/home" className="flex items-center gap-3 transition-transform hover:scale-105 active:scale-95">
+            {/* LOGO Y MARCA (Visible en Desktop y Mobile) */}
+            <Link
+              href="/home"
+              className="flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 shrink-0"
+            >
               <div className="relative w-14 h-14 drop-shadow-md">
-                <Image 
-                  src="/Logo.png" 
-                  alt="Logo Ruben's" 
-                  fill 
+                <Image
+                  src="/Logo.png"
+                  alt="Logo Ruben's"
+                  fill
                   className="object-contain"
                   priority
                 />
               </div>
               <div className="flex flex-col justify-center">
-                <span className="text-2xl leading-none tracking-wider text-[#F6E4C9]" style={{ fontFamily: 'var(--font-anton)' }}>
+                <span
+                  className="text-2xl leading-none tracking-wider text-[#F6E4C9]"
+                  style={{ fontFamily: "var(--font-anton)" }}
+                >
                   RUBEN'S
                 </span>
                 <span className="text-[0.65rem] font-bold tracking-widest text-[#E7AF67] uppercase">
@@ -59,17 +87,17 @@ export default function Navbar() {
             </Link>
 
             {/* MENÚ DESKTOP */}
-            <div className="hidden xl:flex items-center space-x-2">
-              {navLinks.map((link) => {
+            <div className="hidden xl:flex items-center space-x-1">
+              {mainLinks.map((link) => {
                 const isActive = pathname === link.href;
                 const Icon = link.icon;
                 return (
                   <Link
                     key={link.name}
                     href={link.href}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-4xl font-bold text-sm transition-all duration-200 ${
-                      isActive 
-                        ? "bg-[#B43E17] text-[#F6E4C9] shadow-inner" 
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-4xl font-bold text-sm transition-all duration-200 ${
+                      isActive
+                        ? "bg-[#B43E17] text-[#F6E4C9] shadow-inner"
                         : "hover:bg-[#1B361B] hover:text-[#E7AF67]"
                     }`}
                   >
@@ -78,11 +106,56 @@ export default function Navbar() {
                   </Link>
                 );
               })}
+
+              {/* DROPDOWN ESTADÍSTICAS DESKTOP */}
+              <div className="relative">
+                <button
+                  onMouseEnter={() => setIsStatsOpen(true)}
+                  onMouseLeave={() => setIsStatsOpen(false)}
+                  onClick={() => setIsStatsOpen(!isStatsOpen)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-4xl font-bold text-sm transition-all duration-200 ${
+                    pathname.includes("/estadisticas")
+                      ? "bg-[#B43E17] text-[#F6E4C9]"
+                      : "hover:bg-[#1B361B] hover:text-[#E7AF67]"
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Estadísticas
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      isStatsOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {isStatsOpen && (
+                  <div
+                    onMouseEnter={() => setIsStatsOpen(true)}
+                    onMouseLeave={() => setIsStatsOpen(false)}
+                    className="absolute top-full left-0 mt-1 w-48 bg-[#1B361B] border border-[#F6E4C9]/10 rounded-2xl shadow-2xl py-2 animate-in fade-in zoom-in-95 duration-200"
+                  >
+                    {statsLinks.map((subLink) => (
+                      <Link
+                        key={subLink.name}
+                        href={subLink.href}
+                        className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
+                          pathname === subLink.href
+                            ? "text-[#E7AF67] bg-[#294C29]/50"
+                            : "text-[#F6E4C9] hover:bg-[#294C29] hover:text-[#E7AF67]"
+                        }`}
+                      >
+                        <subLink.icon className="w-4 h-4" />
+                        {subLink.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* PERFIL Y LOGOUT DESKTOP */}
             <div className="hidden xl:flex items-center gap-3 border-l border-[#F6E4C9]/20 pl-4 ml-2">
-              <Link 
+              <Link
                 href="/home/perfil"
                 className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#1B361B] text-[#F6E4C9] hover:text-[#E7AF67] transition-colors font-bold text-sm"
               >
@@ -98,11 +171,11 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* BOTÓN HAMBURGUESA */}
+            {/* BOTÓN HAMBURGUESA MÓVIL */}
             <div className="xl:hidden flex items-center">
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 rounded-4xl bg-[#1B361B] text-[#F6E4C9] hover:text-[#E7AF67] focus:outline-none focus:ring-2 focus:ring-[#E7AF67] transition-colors"
+                className="p-2 rounded-4xl bg-[#1B361B] text-[#F6E4C9] hover:text-[#E7AF67] focus:outline-none transition-colors"
               >
                 {isOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
               </button>
@@ -110,14 +183,14 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MENÚ MÓVIL */}
-        <div 
+        {/* MENÚ MÓVIL DESPLEGABLE */}
+        <div
           className={`xl:hidden absolute top-24 left-0 w-full bg-[#294C29] border-t border-[#1B361B] shadow-2xl transition-all duration-300 origin-top overflow-y-auto ${
             isOpen ? "max-h-[85vh] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
           <div className="px-4 pt-4 pb-8 space-y-2">
-            {navLinks.map((link) => {
+            {mobileLinks.map((link) => {
               const isActive = pathname === link.href;
               const Icon = link.icon;
               return (
@@ -126,18 +199,22 @@ export default function Navbar() {
                   href={link.href}
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3.5 rounded-4xl font-bold text-base transition-colors ${
-                    isActive 
-                      ? "bg-[#B43E17] text-[#F6E4C9]" 
+                    isActive
+                      ? "bg-[#B43E17] text-[#F6E4C9]"
                       : "hover:bg-[#1B361B] text-[#F6E4C9]"
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? "text-[#F6E4C9]" : "text-[#E7AF67]"}`} />
+                  <Icon
+                    className={`w-5 h-5 ${
+                      isActive ? "text-[#F6E4C9]" : "text-[#E7AF67]"
+                    }`}
+                  />
                   {link.name}
                 </Link>
               );
             })}
-            
-            <div className="h-px bg-[#F6E4C9]/10 my-4"></div>
+
+          
 
             <Link
               href="/home/perfil"
@@ -147,7 +224,7 @@ export default function Navbar() {
               <UserCircle className="w-5 h-5 text-[#E7AF67]" />
               Perfil
             </Link>
-            
+
             <button
               onClick={() => {
                 setIsOpen(false);

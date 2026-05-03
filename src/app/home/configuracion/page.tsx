@@ -141,7 +141,7 @@ export default function ConfiguracionPage() {
 
         <div className="hidden lg:flex justify-center gap-3 overflow-x-auto pt-2 pb-6 no-scrollbar">
           {data.categorias.map((cat: any) => (
-            <button key={cat.id} onClick={() => setActiveTab(cat.id)} className={`px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap border-2 leading-relaxed ${activeTab === cat.id ? "bg-[#294C29] text-[#f3c9f6] border-[#294C29] shadow-lg -translate-y-0.5" : "bg-white text-[#294C29] border hover:border-[#294C29]/10 hover:text-[#294C29]"}`}>
+            <button key={cat.id} onClick={() => setActiveTab(cat.id)} className={`px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap border-2 leading-relaxed ${activeTab === cat.id ? "bg-[#294C29] text-[#F6E4C9] border-[#294C29] shadow-lg -translate-y-0.5" : "bg-white text-[#294C29] border hover:border-[#294C29]/10 hover:text-[#294C29]"}`}>
               {cat.nombre}
             </button>
           ))}

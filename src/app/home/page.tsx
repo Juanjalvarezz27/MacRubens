@@ -12,11 +12,11 @@ import { toast } from "react-toastify";
 
 function POSContent() {
   const { tasa, loading: loadingTasa } = useTasaBCV();
-  const tasaActual = tasa || 38.50;
-  
+  const tasaActual = tasa || 600;
+
   const searchParams = useSearchParams();
   const pedidoPendienteId = searchParams.get("pedidoId");
-  const actionType = searchParams.get("action"); // Leemos si la acción es "edit"
+  const actionType = searchParams.get("action");
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [cliente, setCliente] = useState<DatosCliente | null>(null);
@@ -27,8 +27,21 @@ function POSContent() {
   const [idToDelete, setIdToDelete] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  
+
   const initStarted = useRef(false);
+
+  // Función para resetear localmente y en storage
+  const resetCaja = () => {
+    setCart([]);
+    setCliente(null);
+    setStep(1);
+    setIsMobileCartOpen(false);
+    setEditingItem(null);
+    localStorage.removeItem("macrubens_cart");
+    localStorage.removeItem("macrubens_cliente");
+    localStorage.removeItem("macrubens_step");
+    localStorage.removeItem("macrubens_pedido_activo");
+  };
 
   useEffect(() => {
     const initPOS = async () => {
@@ -40,9 +53,9 @@ function POSContent() {
           const res = await fetch(`/api/pedidos/${pedidoPendienteId}`);
           if (res.ok) {
             const data = await res.json();
-            
+
             setCliente({ cedula: data.cliente.cedula, nombre: data.cliente.nombre, telefono: data.cliente.telefono || "" });
-            
+
             const reconstruido: CartItem[] = data.detalles.map((d: any) => ({
               uniqueId: Math.random().toString(36).substring(7),
               producto: d.producto,
@@ -51,20 +64,18 @@ function POSContent() {
               precioUnitario: d.precioUnitario,
               subItems: d.subDetalles.map((sub: any) => ({
                 producto: sub.producto,
-                cantidad: sub.cantidad / d.cantidad, 
+                cantidad: sub.cantidad / d.cantidad,
                 precio: sub.precioUnitario
               })),
               subtotal: d.subtotal + d.subDetalles.reduce((acc: number, sub: any) => acc + sub.subtotal, 0)
             }));
-            
+
             setCart(reconstruido);
-            
-            // MAGIA AQUÍ: Si es edición vamos al Paso 2, si es solo pagar vamos al Paso 3
-            setStep(actionType === "edit" ? 2 : 3); 
-            
+            setStep(actionType === "edit" ? 2 : 3);
+
             localStorage.setItem("macrubens_pedido_activo", pedidoPendienteId);
             window.history.replaceState(null, "", "/home");
-            
+
             toast.success(actionType === "edit" ? "Orden lista para ser editada" : "Orden recuperada correctamente");
           } else {
             toast.error("No se pudo cargar la orden");
@@ -89,6 +100,18 @@ function POSContent() {
     };
 
     if (!isHydrated) initPOS();
+
+    /** 
+     * LÓGICA SOLICITADA:
+     * Al retornar una función en este useEffect, se ejecutará cuando el componente
+     * se desmonte (al cambiar de ruta). Esto limpia el localStorage.
+     */
+    return () => {
+      localStorage.removeItem("macrubens_cart");
+      localStorage.removeItem("macrubens_cliente");
+      localStorage.removeItem("macrubens_step");
+      localStorage.removeItem("macrubens_pedido_activo");
+    };
   }, [pedidoPendienteId, isHydrated, actionType]);
 
   useEffect(() => {
@@ -108,18 +131,6 @@ function POSContent() {
     else document.body.style.overflow = "auto";
     return () => { document.body.style.overflow = "auto"; };
   }, [isMobileCartOpen]);
-
-  const resetCaja = () => {
-    setCart([]);
-    setCliente(null);
-    setStep(1);
-    setIsMobileCartOpen(false);
-    setEditingItem(null);
-    localStorage.removeItem("macrubens_cart");
-    localStorage.removeItem("macrubens_cliente");
-    localStorage.removeItem("macrubens_step");
-    localStorage.removeItem("macrubens_pedido_activo");
-  };
 
   const handleCancelOrderConfirm = () => {
     resetCaja();
@@ -203,7 +214,6 @@ function POSContent() {
 
   return (
     <div className="w-full min-h-[calc(100vh-80px)] flex flex-col lg:flex-row bg-[#FDF8F1] overflow-hidden relative">
-
       <ConfirmModal
         isOpen={!!idToDelete}
         onClose={() => setIdToDelete(null)}
@@ -263,11 +273,7 @@ function POSContent() {
           {step === 1 && <ClienteSetup onClientConfirmed={handleClientConfirmed} clientePrevio={cliente} />}
           {step === 2 && (
             <>
-              <MenuSetup
-                onAddToCart={addToCart}
-                itemToEdit={editingItem}
-                onCancelEdit={() => setEditingItem(null)}
-              />
+              <MenuSetup onAddToCart={addToCart} itemToEdit={editingItem} onCancelEdit={() => setEditingItem(null)} />
               {cart.length > 0 && (
                 <div className="hidden lg:flex justify-end mt-6 gap-3">
                   <button onClick={() => setIsCancelModalOpen(true)} className="bg-white hover:bg-[#B43E17]/10 text-[#B43E17] border border-[#B43E17]/30 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-sm flex items-center gap-2">
@@ -281,7 +287,7 @@ function POSContent() {
             </>
           )}
           {step === 3 && cliente && (
-            <PagoSetup 
+            <PagoSetup
               cliente={cliente}
               cart={cart}
               tasaBCV={tasaActual}
@@ -307,7 +313,6 @@ function POSContent() {
 
       {/* LADO DERECHO: TICKET */}
       <div className={`fixed inset-0 z-50 bg-[#FDF8F1] flex flex-col transition-transform duration-300 ease-in-out ${isMobileCartOpen ? "translate-y-0" : "translate-y-full"} lg:static lg:translate-y-0 lg:w-115 lg:bg-white lg:border-l lg:border-[#294C29]/10 lg:h-[calc(100vh-80px)] lg:z-auto ${step === 1 ? "lg:flex hidden" : "flex"}`}>
-
         <div className="p-6 border-b border-[#294C29]/10 bg-white flex justify-between items-center">
           <div>
             <h2 className="text-xl font-black text-[#294C29] uppercase tracking-tighter leading-none">Ticket</h2>
@@ -326,10 +331,8 @@ function POSContent() {
             <div className="space-y-4">
               {cart.map((item) => {
                 const esPizza = ["base", "especial"].includes(item.producto.categoria?.nombre.toLowerCase() || "");
-
                 return (
                   <div key={item.uniqueId} className="bg-white p-5 rounded-3xl border border-[#294C29]/10 shadow-sm relative group">
-
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex-1">
                         <h4 className="font-black text-[#294C29] text-lg leading-tight uppercase flex flex-wrap items-baseline gap-1">
@@ -338,7 +341,6 @@ function POSContent() {
                         </h4>
                         {item.esPequena && <span className="inline-block text-[10px] font-black bg-[#B43E17]/10 text-[#B43E17] px-2 py-0.5 rounded-md uppercase tracking-widest mt-2">Pequeña</span>}
                       </div>
-
                       <div className="flex items-center gap-1 bg-[#FDF8F1] rounded-lg p-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                         {esPizza && (
                           <button onClick={() => setEditingItem(item)} className="p-1.5 text-[#294C29]/40 hover:text-[#294C29] hover:bg-white rounded-md transition-colors" title="Editar Pizza">
@@ -401,7 +403,6 @@ function POSContent() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }
