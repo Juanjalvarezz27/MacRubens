@@ -58,7 +58,7 @@ export default function LoginPage() {
           <div className="flex flex-col items-center mb-10">
             <div className="w-28 h-28 mb-4 relative drop-shadow-[0_15px_15px_rgba(0,0,0,0.4)] transform transition-transform duration-300 hover:scale-105">
               <Image 
-                src="/Logo.png" 
+                src="/Logo1.png" 
                 alt="Logo Ruben's Pizzeria" 
                 fill 
                 className="object-contain"
