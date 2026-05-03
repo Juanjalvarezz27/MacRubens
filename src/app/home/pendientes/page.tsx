@@ -164,7 +164,7 @@ export default function OrdenesPendientesPage() {
           <div className="text-center px-4">
             <span className="block text-[10px] sm:text-xs font-black uppercase tracking-widest text-red-500/70">Total Deuda</span>
             <span className="text-2xl sm:text-3xl font-black text-red-600 leading-none">${totalDeudaUSD.toFixed(2)}</span>
-            <span className="block text-[9px] sm:text-[10px] font-bold text-red-500 uppercase tracking-widest">Bs. {totalDeudaVES.toFixed(2)}</span>
+            <span className="block text-[11px] sm:text-[12px] font-bold text-red-500 uppercase tracking-widest">Bs. {totalDeudaVES.toFixed(2)}</span>
           </div>
         </div>
       </div>
