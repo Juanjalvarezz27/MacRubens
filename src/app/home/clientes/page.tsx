@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Search, User, Phone, ShoppingBag, X, Calendar, AlertCircle, CheckCircle2, Filter, ChevronDown } from "lucide-react";
+import { Loader2, Search, User, Phone, ShoppingBag, X, Calendar, AlertCircle, CheckCircle2, Filter, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "react-toastify";
 
 interface Producto { nombre: string; }
@@ -28,6 +28,8 @@ interface Cliente {
   pedidos: Pedido[];
 }
 
+const ITEMS_PER_PAGE = 30; // Límite por página
+
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,9 +37,9 @@ export default function ClientesPage() {
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   
   const [sortBy, setSortBy] = useState<"recientes" | "gasto" | "frecuentes">("recientes");
-  
-  // NUEVO ESTADO: Para controlar nuestro filtro personalizado
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -55,11 +57,18 @@ export default function ClientesPage() {
     fetchClientes();
   }, []);
 
+  // Si busca o filtra, volvemos a la página 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortBy]);
+
+  // 1. Filtrado
   let clientesFiltrados = clientes.filter(c => 
     c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
     c.cedula.includes(searchTerm)
   );
 
+  // 2. Ordenamiento
   if (sortBy === "gasto") {
     clientesFiltrados.sort((a, b) => b.totalGastadoUSD - a.totalGastadoUSD);
   } else if (sortBy === "frecuentes") {
@@ -73,6 +82,12 @@ export default function ClientesPage() {
     });
   }
 
+  // 3. Cálculos de Paginación
+  const totalPages = Math.ceil(clientesFiltrados.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  // ESTA ES LA VARIABLE CLAVE QUE CORTA LA LISTA A 30
+  const currentClientes = clientesFiltrados.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const formatHora = (isoString: string) => {
     return new Date(isoString).toLocaleDateString('es-VE', { 
       day: '2-digit', month: 'short', year: 'numeric', 
@@ -80,7 +95,6 @@ export default function ClientesPage() {
     });
   };
 
-  // Opciones del filtro para mapearlas fácilmente
   const filterOptions = [
     { value: "recientes", label: "Más Recientes" },
     { value: "gasto", label: "Top Gasto ($)" },
@@ -99,17 +113,18 @@ export default function ClientesPage() {
   return (
     <div className="w-full min-h-[calc(100vh-80px)] flex bg-[#FDF8F1] overflow-hidden relative">
       
-      {/* PANEL PRINCIPAL (LISTA DE CLIENTES) */}
-      <div className="flex-1 flex flex-col h-[calc(100vh-80px)] overflow-y-auto p-6 lg:p-10">
+      {/* PANEL PRINCIPAL */}
+      <div className="flex-1 flex flex-col h-[calc(100vh-80px)] overflow-y-auto p-6 lg:p-10 pb-20">
         
         {/* HEADER, BUSCADOR Y FILTROS */}
-        <div className="max-w-6xl mx-auto w-full flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6 z-10 relative">
-          <div className="flex flex-col items-start space-y-2">
-            <h1 className="text-4xl md:text-5xl font-black text-[#294C29] uppercase tracking-tighter leading-none">
+        <div className="max-w-6xl mx-auto w-full flex flex-col md:flex-row justify-between items-center md:items-end mb-10 gap-6 z-10 relative">
+          
+          <div className="flex flex-col items-center lg:items-start space-y-2 w-full md:w-auto text-center md:text-left">
+            <h1 className="text-5xl md:text-5xl font-black text-[#294C29] uppercase tracking-tighter leading-none">
               Directorio de <span className="text-[#B43E17]">Clientes</span>
             </h1>
-            <div className="h-1.5 w-16 bg-[#B43E17] rounded-full"></div>
-            <p className="text-[#294C29]/60 font-bold text-sm mt-3 flex items-center gap-2 pt-2">
+            <div className="h-1.5 w-16 bg-[#B43E17] rounded-full mx-auto lg:mx-0"></div>
+            <p className="text-[#294C29]/60 font-bold text-sm mt-3 flex items-center justify-center lg:justify-start gap-2 pt-2">
               <User className="w-4 h-4" /> {clientes.length} Clientes registrados
             </p>
           </div>
@@ -129,7 +144,7 @@ export default function ClientesPage() {
               />
             </div>
 
-            {/* FILTRO DROPDOWN PERSONALIZADO (Cero select nativo feo) */}
+            {/* FILTRO DROPDOWN PERSONALIZADO */}
             <div className="w-full sm:w-52 relative">
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -142,12 +157,10 @@ export default function ClientesPage() {
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isFilterOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* Overlay invisible para cerrar al hacer clic afuera */}
               {isFilterOpen && (
                 <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)}></div>
               )}
 
-              {/* Opciones del menú personalizadas */}
               <div className={`absolute top-full left-0 right-0 mt-2 bg-white border border-[#294C29]/10 rounded-2xl shadow-xl overflow-hidden z-20 transition-all duration-200 origin-top ${isFilterOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}>
                 {filterOptions.map((opt) => (
                   <button
@@ -180,50 +193,80 @@ export default function ClientesPage() {
               <p className="font-bold text-[#294C29]/50 text-sm mt-2">No se encontraron clientes con esos parámetros.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {clientesFiltrados.map((cliente) => (
-                <div 
-                  key={cliente.id}
-                  onClick={() => setSelectedCliente(cliente)}
-                  className="bg-white rounded-4xl p-6 border-2 border-[#294C29]/5 hover:border-[#294C29]/20 cursor-pointer transition-all shadow-sm flex flex-col group"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-[#FDF8F1] rounded-xl flex items-center justify-center text-[#294C29] group-hover:bg-[#294C29] group-hover:text-[#F6E4C9] transition-colors">
-                        <User className="w-6 h-6" />
+            <>
+              {/* AQUÍ ESTABA EL ERROR: Aseguramos mapear currentClientes en vez de clientesFiltrados */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {currentClientes.map((cliente) => (
+                  <div 
+                    key={cliente.id}
+                    onClick={() => setSelectedCliente(cliente)}
+                    className="bg-white rounded-4xl p-6 border-2 border-[#294C29]/5 hover:border-[#294C29]/20 cursor-pointer transition-all shadow-sm flex flex-col group"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-[#FDF8F1] rounded-xl flex items-center justify-center text-[#294C29] group-hover:bg-[#294C29] group-hover:text-[#F6E4C9] transition-colors">
+                          <User className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-black text-lg text-[#294C29] uppercase tracking-tighter leading-tight line-clamp-1">{cliente.nombre}</h3>
+                          <span className="text-[11px] font-bold text-[#294C29]/50 uppercase tracking-widest">CI: {cliente.cedula}</span>
+                        </div>
                       </div>
+                    </div>
+
+                    {cliente.telefono && (
+                      <div className="flex items-center gap-2 text-[#294C29]/70 mb-4 bg-[#FDF8F1] w-fit px-3 py-1.5 rounded-lg border border-[#294C29]/5">
+                        <Phone className="w-3.5 h-3.5" />
+                        <span className="text-xs font-bold tracking-widest">{cliente.telefono}</span>
+                      </div>
+                    )}
+
+                    <div className="mt-auto pt-4 border-t border-[#294C29]/5 flex justify-between items-end">
                       <div>
-                        <h3 className="font-black text-lg text-[#294C29] uppercase tracking-tighter leading-tight line-clamp-1">{cliente.nombre}</h3>
-                        <span className="text-[11px] font-bold text-[#294C29]/50 uppercase tracking-widest">CI: {cliente.cedula}</span>
+                        <span className="block text-[10px] font-black uppercase tracking-widest text-[#294C29]/40 mb-1">Órdenes Totales</span>
+                        <div className="flex items-center gap-1.5 text-[#294C29]">
+                          <ShoppingBag className="w-4 h-4" />
+                          <span className="font-black text-lg leading-none">{cliente.cantidadPedidos}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="block text-[10px] font-black uppercase tracking-widest text-[#B43E17]/60 mb-1">Total Gastado</span>
+                        <div className="flex items-center justify-end gap-1 text-[#B43E17]">
+                          <span className="font-black text-2xl leading-none">${cliente.totalGastadoUSD.toFixed(2)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  {cliente.telefono && (
-                    <div className="flex items-center gap-2 text-[#294C29]/70 mb-4 bg-[#FDF8F1] w-fit px-3 py-1.5 rounded-lg border border-[#294C29]/5">
-                      <Phone className="w-3.5 h-3.5" />
-                      <span className="text-xs font-bold tracking-widest">{cliente.telefono}</span>
-                    </div>
-                  )}
-
-                  <div className="mt-auto pt-4 border-t border-[#294C29]/5 flex justify-between items-end">
-                    <div>
-                      <span className="block text-[10px] font-black uppercase tracking-widest text-[#294C29]/40 mb-1">Órdenes Totales</span>
-                      <div className="flex items-center gap-1.5 text-[#294C29]">
-                        <ShoppingBag className="w-4 h-4" />
-                        <span className="font-black text-lg leading-none">{cliente.cantidadPedidos}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="block text-[10px] font-black uppercase tracking-widest text-[#B43E17]/60 mb-1">Total Gastado</span>
-                      <div className="flex items-center justify-end gap-1 text-[#B43E17]">
-                        <span className="font-black text-2xl leading-none">${cliente.totalGastadoUSD.toFixed(2)}</span>
-                      </div>
-                    </div>
+              {/* CONTROLES DE PAGINACIÓN */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-4 mt-12 mb-4">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="p-3 bg-white border border-[#294C29]/10 text-[#294C29] rounded-2xl hover:bg-[#FDF8F1] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  
+                  <div className="bg-white border border-[#294C29]/10 px-6 py-3 rounded-2xl shadow-sm">
+                    <span className="text-xs font-black text-[#294C29] uppercase tracking-widest">
+                      Página <span className="text-[#B43E17] mx-1">{currentPage}</span> de {totalPages}
+                    </span>
                   </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="p-3 bg-white border border-[#294C29]/10 text-[#294C29] rounded-2xl hover:bg-[#FDF8F1] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -320,7 +363,7 @@ export default function ClientesPage() {
 
       {selectedCliente && (
         <div 
-          className="fixed inset-0 bg-[#1A301A]/60 z-40 animate-in fade-in duration-300"
+          className="fixed inset-0 bg-[#1A301A]/60 backdrop-blur-sm z-40 animate-in fade-in duration-300"
           onClick={() => setSelectedCliente(null)}
         />
       )}
