@@ -19,6 +19,7 @@ export default function Navbar() {
   const navLinks = [
     { name: "Órdenes", href: "/home", icon: Pizza },
     { name: "Est. Diarias", href: "/home/estadisticas/diarias", icon: BarChart3 },
+    { name: "Pendientes", href: "/home/pendientes", icon: BarChart3 },
     { name: "Cierre Diario", href: "/home/cierre", icon: Wallet },
     { name: "Est. Generales", href: "/home/estadisticas/generales", icon: LineChart },
     { name: "Clientes", href: "/home/clientes", icon: Users },
