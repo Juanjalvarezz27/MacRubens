@@ -107,11 +107,13 @@ export default function Navbar() {
                 );
               })}
 
-              {/* DROPDOWN ESTADÍSTICAS DESKTOP */}
-              <div className="relative">
+              {/* DROPDOWN ESTADÍSTICAS DESKTOP CORREGIDO */}
+              <div 
+                className="relative"
+                onMouseEnter={() => setIsStatsOpen(true)}
+                onMouseLeave={() => setIsStatsOpen(false)}
+              >
                 <button
-                  onMouseEnter={() => setIsStatsOpen(true)}
-                  onMouseLeave={() => setIsStatsOpen(false)}
                   onClick={() => setIsStatsOpen(!isStatsOpen)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-4xl font-bold text-sm transition-all duration-200 ${
                     pathname.includes("/estadisticas")
@@ -129,25 +131,24 @@ export default function Navbar() {
                 </button>
 
                 {isStatsOpen && (
-                  <div
-                    onMouseEnter={() => setIsStatsOpen(true)}
-                    onMouseLeave={() => setIsStatsOpen(false)}
-                    className="absolute top-full left-0 mt-1 w-48 bg-[#1B361B] border border-[#F6E4C9]/10 rounded-2xl shadow-2xl py-2 animate-in fade-in zoom-in-95 duration-200"
-                  >
-                    {statsLinks.map((subLink) => (
-                      <Link
-                        key={subLink.name}
-                        href={subLink.href}
-                        className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
-                          pathname === subLink.href
-                            ? "text-[#E7AF67] bg-[#294C29]/50"
-                            : "text-[#F6E4C9] hover:bg-[#294C29] hover:text-[#E7AF67]"
-                        }`}
-                      >
-                        <subLink.icon className="w-4 h-4" />
-                        {subLink.name}
-                      </Link>
-                    ))}
+                  /* Contenedor "puente" con padding (pt-2) para evitar que el hover se pierda */
+                  <div className="absolute top-full left-0 pt-2 w-48">
+                    <div className="bg-[#1B361B] border border-[#F6E4C9]/10 rounded-2xl shadow-2xl py-2 animate-in fade-in zoom-in-95 duration-200">
+                      {statsLinks.map((subLink) => (
+                        <Link
+                          key={subLink.name}
+                          href={subLink.href}
+                          className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
+                            pathname === subLink.href
+                              ? "text-[#E7AF67] bg-[#294C29]/50"
+                              : "text-[#F6E4C9] hover:bg-[#294C29] hover:text-[#E7AF67]"
+                          }`}
+                        >
+                          <subLink.icon className="w-4 h-4" />
+                          {subLink.name}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -213,8 +214,6 @@ export default function Navbar() {
                 </Link>
               );
             })}
-
-          
 
             <Link
               href="/home/perfil"

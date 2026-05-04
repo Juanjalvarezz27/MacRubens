@@ -43,6 +43,7 @@ function POSContent() {
     localStorage.removeItem("macrubens_pedido_activo");
   };
 
+  // EFECTO 1: Solo se encarga de hidratar los datos (Cargar orden pendiente o borrador)
   useEffect(() => {
     const initPOS = async () => {
       if (initStarted.current) return;
@@ -73,6 +74,7 @@ function POSContent() {
             setCart(reconstruido);
             setStep(actionType === "edit" ? 2 : 3);
 
+            // Guardamos el ID en caché para el momento del pago
             localStorage.setItem("macrubens_pedido_activo", pedidoPendienteId);
             window.history.replaceState(null, "", "/home");
 
@@ -100,20 +102,19 @@ function POSContent() {
     };
 
     if (!isHydrated) initPOS();
+  }, [pedidoPendienteId, isHydrated, actionType]);
 
-    /** 
-     * LÓGICA SOLICITADA:
-     * Al retornar una función en este useEffect, se ejecutará cuando el componente
-     * se desmonte (al cambiar de ruta). Esto limpia el localStorage.
-     */
+  // EFECTO 2: Solo se encarga de limpiar el LocalStorage CUANDO ABANDONAS LA PÁGINA (Unmount)
+  useEffect(() => {
     return () => {
       localStorage.removeItem("macrubens_cart");
       localStorage.removeItem("macrubens_cliente");
       localStorage.removeItem("macrubens_step");
       localStorage.removeItem("macrubens_pedido_activo");
     };
-  }, [pedidoPendienteId, isHydrated, actionType]);
+  }, []); // <-- El arreglo vacío garantiza que esto NO se ejecute accidentalmente mientras usas la caja
 
+  // Guardado automático del progreso de la caja
   useEffect(() => {
     if (isHydrated && !pedidoPendienteId) {
       localStorage.setItem("macrubens_cart", JSON.stringify(cart));
