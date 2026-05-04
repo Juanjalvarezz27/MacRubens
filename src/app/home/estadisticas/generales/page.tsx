@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { 
-  Loader2, Calendar, ChevronDown, DollarSign, ShoppingBag, Users, 
-  TrendingUp, PieChart, Award, Banknote, CreditCard, Smartphone, 
-  Clock, Search, Filter, X, ChevronLeft, ChevronRight, FileText, 
-  CheckCircle2, User 
+import {
+  Loader2, Calendar, ChevronDown, DollarSign, ShoppingBag, Users,
+  TrendingUp, PieChart, Award, Banknote, CreditCard, Smartphone,
+  Clock, Search, Filter, X, ChevronLeft, ChevronRight, FileText,
+  CheckCircle2, User
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -49,7 +49,7 @@ export default function EstadisticasGeneralesPage() {
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<"hoy" | "semana" | "mes" | "ano" | "todo" | "custom">("todo");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  
+
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -103,21 +103,24 @@ export default function EstadisticasGeneralesPage() {
     return <CreditCard className="w-5 h-5" />;
   };
 
+  // CORRECCIÓN: Fuerza ESTRICTAMENTE la zona horaria de Venezuela (UTC-4)
   const formatFecha = (iso: string) => {
-    const date = new Date(iso);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    let hours = date.getHours();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; 
-    const strHours = String(hours).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${day}/${month}/${year}, ${strHours}:${minutes} ${ampm}`;
+    try {
+      const date = new Date(iso);
+      return date.toLocaleString('es-VE', {
+        timeZone: 'America/Caracas',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }).replace(',', ' -');
+    } catch (e) {
+      return iso; // Fallback
+    }
   };
 
-  // 🔥 Formateador de vista en DD/MM/AAAA
   const formatDateForDisplay = (dateString: string) => {
     if (!dateString) return "";
     const [year, month, day] = dateString.split("-");
@@ -143,7 +146,7 @@ export default function EstadisticasGeneralesPage() {
 
       {/* HEADER Y FILTROS */}
       <div className="max-w-6xl mx-auto flex flex-col xl:flex-row justify-between items-center xl:items-end mb-8 sm:mb-10 gap-6 z-20 relative">
-        
+
         <div className="flex flex-col items-center xl:items-start space-y-2 w-full xl:w-auto text-center xl:text-left">
           <h1 className="text-4xl sm:text-5xl md:text-5xl font-black text-[#294C29] uppercase tracking-tighter leading-none">
             Estadísticas <span className="text-[#B43E17]">Generales</span>
@@ -155,13 +158,13 @@ export default function EstadisticasGeneralesPage() {
         </div>
 
         <div className="w-full xl:w-auto flex flex-col md:flex-row items-center gap-4">
-          
-          {/* 🔥 LÓGICA CONDICIONAL: SI ESTÁ EN CUSTOM, MUESTRA ESTO Y OCULTA EL RESTO */}
+
+          {/* LÓGICA CONDICIONAL: SI ESTÁ EN CUSTOM, MUESTRA ESTO Y OCULTA EL RESTO */}
           {periodo === "custom" ? (
             <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2 rounded-[1.25rem] border border-[#294C29]/10 shadow-sm animate-in fade-in slide-in-from-right-4">
-              
+
               <div className="flex items-center justify-center gap-1 sm:gap-2 w-full sm:w-auto bg-[#FDF8F1] sm:bg-transparent rounded-xl p-2 sm:p-0">
-                
+
                 {/* FECHA INICIO (Input mágico 100% clickeable) */}
                 <div className="relative w-28 sm:w-32 h-10 flex items-center justify-center">
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -169,19 +172,19 @@ export default function EstadisticasGeneralesPage() {
                       {startDate ? <span className="text-[#294C29]">{formatDateForDisplay(startDate)}</span> : <span className="text-[#294C29]/40">INICIO</span>}
                     </span>
                   </div>
-                  <input 
+                  <input
                     type="date"
-                    value={startDate} 
+                    value={startDate}
                     onChange={(e) => {
                       setStartDate(e.target.value);
-                      if (endDate && e.target.value > endDate) setEndDate(""); 
-                    }} 
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer" 
+                      if (endDate && e.target.value > endDate) setEndDate("");
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   />
                 </div>
-                
+
                 <span className="font-black text-[#294C29]/20 shrink-0">-</span>
-                
+
                 {/* FECHA FINAL (Input mágico 100% clickeable) */}
                 <div className="relative w-28 sm:w-32 h-10 flex items-center justify-center">
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -189,12 +192,12 @@ export default function EstadisticasGeneralesPage() {
                       {endDate ? <span className="text-[#294C29]">{formatDateForDisplay(endDate)}</span> : <span className="text-[#294C29]/40">FINAL</span>}
                     </span>
                   </div>
-                  <input 
+                  <input
                     type="date"
-                    value={endDate} 
+                    value={endDate}
                     min={startDate}
-                    onChange={(e) => setEndDate(e.target.value)} 
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer" 
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   />
                 </div>
 
@@ -204,12 +207,12 @@ export default function EstadisticasGeneralesPage() {
                 <button onClick={handleCustomSearch} className="flex-1 sm:flex-none flex justify-center bg-[#B43E17] hover:bg-[#9F280A] text-[#F6E4C9] p-3 rounded-xl transition-colors shadow-sm">
                   <Search className="w-5 h-5" />
                 </button>
-                <button 
+                <button
                   onClick={() => {
-                    setStartDate(""); 
-                    setEndDate(""); 
+                    setStartDate("");
+                    setEndDate("");
                     handleSelectPeriod("todo");
-                  }} 
+                  }}
                   className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 bg-white border border-red-500/20 hover:bg-red-50 text-red-600 px-4 py-3 rounded-xl transition-colors shadow-sm font-black uppercase tracking-widest text-xs"
                 >
                   <X className="w-4 h-4" /> CERRAR
@@ -222,14 +225,14 @@ export default function EstadisticasGeneralesPage() {
               <div className="w-full sm:w-64 relative">
                 <button onClick={() => setIsFilterOpen(!isFilterOpen)} className="w-full bg-white text-[#B43E17] font-black uppercase tracking-widest text-xs sm:text-sm rounded-[1.25rem] py-4 px-4 sm:px-5 flex items-center justify-between border border-[#294C29]/10 hover:border-[#B43E17]/50 transition-all shadow-sm focus:outline-none">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-[#B43E17] shrink-0" /> 
+                    <Calendar className="w-5 h-5 text-[#B43E17] shrink-0" />
                     <span className="truncate">{periodOptions.find(opt => opt.value === periodo)?.label}</span>
                   </div>
                   <ChevronDown className={`w-5 h-5 transition-transform duration-200 shrink-0 ${isFilterOpen ? "rotate-180" : ""}`} />
                 </button>
-                
+
                 {isFilterOpen && <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)}></div>}
-                
+
                 <div className={`absolute top-full right-0 mt-2 w-full bg-white border border-[#294C29]/10 rounded-2xl shadow-xl overflow-hidden z-20 transition-all duration-200 origin-top ${isFilterOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}>
                   {periodOptions.map((opt) => (
                     <button key={opt.value} onClick={() => handleSelectPeriod(opt.value)} className={`w-full text-left px-5 py-4 text-xs sm:text-sm font-black uppercase tracking-widest transition-colors ${periodo === opt.value ? "bg-[#B43E17]/10 text-[#B43E17]" : "text-[#294C29]/60 hover:bg-[#FDF8F1] hover:text-[#294C29]"}`}>
@@ -250,7 +253,7 @@ export default function EstadisticasGeneralesPage() {
       </div>
 
       <div className="max-w-6xl mx-auto space-y-6 z-10 relative">
-        
+
         {/* FILA DE 4 KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="bg-[#294C29] p-5 sm:p-6 rounded-4xl shadow-lg relative overflow-hidden text-[#F6E4C9]">
@@ -267,7 +270,7 @@ export default function EstadisticasGeneralesPage() {
               <span className="block text-sm font-bold text-[#EADDCA] mt-2">Bs. {stats?.totalVES.toFixed(2)}</span>
             </div>
           </div>
-          
+
           <div className="bg-white p-5 sm:p-6 rounded-4xl shadow-sm border border-[#294C29]/10">
             <div className="flex justify-between items-start mb-4">
               <span className="text-xs font-black uppercase tracking-widest text-[#294C29]/50">Órdenes Pagadas</span>
@@ -280,7 +283,7 @@ export default function EstadisticasGeneralesPage() {
               <span className="block text-xs font-bold text-[#294C29]/40 mt-2 uppercase tracking-widest">Tickets procesados</span>
             </div>
           </div>
-          
+
           <div className="bg-white p-5 sm:p-6 rounded-4xl shadow-sm border border-red-500/20">
             <div className="flex justify-between items-start mb-4">
               <span className="text-xs font-black uppercase tracking-widest text-red-500/70">Por Cobrar</span>
@@ -296,7 +299,7 @@ export default function EstadisticasGeneralesPage() {
               <span className="block text-xs font-bold text-red-500/50 mt-2 uppercase tracking-widest">Órdenes pendientes</span>
             </div>
           </div>
-          
+
           <div className="bg-white p-5 sm:p-6 rounded-4xl shadow-sm border border-[#294C29]/10">
             <div className="flex justify-between items-start mb-4">
               <span className="text-xs font-black uppercase tracking-widest text-[#294C29]/50">Clientes Atendidos</span>
@@ -313,7 +316,7 @@ export default function EstadisticasGeneralesPage() {
 
         {/* MÉTODOS Y TOP PRODUCTOS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-6">
-          
+
           <div className="bg-white rounded-4xl p-5 sm:p-6 lg:p-8 border border-[#294C29]/10 shadow-sm">
             <h3 className="font-black text-[#294C29] uppercase tracking-tighter text-xl flex items-center gap-2 mb-6">
               <PieChart className="w-6 h-6 text-[#B43E17]" /> Desglose de Pagos
@@ -381,7 +384,7 @@ export default function EstadisticasGeneralesPage() {
         {/* LIBRO MAYOR DE CLIENTES */}
         {stats?.historial && stats.historial.length > 0 && (
           <div className="bg-white rounded-4xl border border-[#294C29]/10 shadow-sm mt-8 overflow-hidden transition-all">
-            
+
             <button onClick={() => setIsLedgerOpen(!isLedgerOpen)} className="w-full flex flex-col md:flex-row justify-between items-start md:items-center p-5 sm:p-6 lg:p-8 bg-white hover:bg-[#FDF8F1] transition-colors focus:outline-none gap-4">
               <h3 className="font-black text-[#294C29] uppercase tracking-tighter text-xl sm:text-2xl flex items-center gap-2">
                 <FileText className="w-6 h-6 text-[#B43E17]" /> Actividad por Cliente
@@ -403,7 +406,7 @@ export default function EstadisticasGeneralesPage() {
                     const isExpanded = expandedClienteId === cliente.id;
                     return (
                       <div key={cliente.id} className="border border-[#294C29]/10 rounded-2xl overflow-hidden bg-white shadow-sm">
-                        
+
                         <div
                           onClick={() => setExpandedClienteId(isExpanded ? null : cliente.id)}
                           className={`p-4 sm:p-5 flex flex-col md:flex-row justify-between cursor-pointer transition-colors ${isExpanded ? 'bg-[#294C29]/5' : 'hover:bg-[#FDF8F1]'}`}
