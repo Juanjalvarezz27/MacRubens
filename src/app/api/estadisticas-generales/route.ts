@@ -11,27 +11,37 @@ export async function GET(req: NextRequest) {
     const endDateParam = searchParams.get("endDate");
 
     let dateFilter: any = {};
-    const now = new Date();
+    
+    // Obtenemos la fecha ACTUAL exacta en Venezuela (formato "YYYY-MM-DD")
+    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Caracas' });
+    const fechaCaracas = formatter.format(new Date()); 
 
     if (periodo === "hoy") {
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      const start = new Date(`${fechaCaracas}T00:00:00.000-04:00`);
+      const end = new Date(`${fechaCaracas}T23:59:59.999-04:00`);
       dateFilter = { gte: start, lte: end };
     } else if (periodo === "semana") {
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const day = start.getDay();
-      const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-      start.setDate(diff);
+      // Calculamos el inicio de la semana (Lunes) basándonos en la fecha de Caracas de forma segura
+      const baseDate = new Date(`${fechaCaracas}T12:00:00.000Z`);
+      const day = baseDate.getUTCDay();
+      const diff = day === 0 ? -6 : 1 - day; // Si es domingo (0) restamos 6 para llegar al lunes
+      baseDate.setUTCDate(baseDate.getUTCDate() + diff);
+      const startOfWeek = baseDate.toISOString().split('T')[0]; // "YYYY-MM-DD" del lunes
+      
+      const start = new Date(`${startOfWeek}T00:00:00.000-04:00`);
       dateFilter = { gte: start };
     } else if (periodo === "mes") {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+      const startOfMonth = `${fechaCaracas.substring(0, 8)}01`; // "YYYY-MM-01"
+      const start = new Date(`${startOfMonth}T00:00:00.000-04:00`);
       dateFilter = { gte: start };
     } else if (periodo === "ano") {
-      const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0);
+      const startOfYear = `${fechaCaracas.substring(0, 5)}01-01`; // "YYYY-01-01"
+      const start = new Date(`${startOfYear}T00:00:00.000-04:00`);
       dateFilter = { gte: start };
     } else if (periodo === "custom" && startDateParam && endDateParam) {
-      const start = new Date(`${startDateParam}T00:00:00`);
-      const end = new Date(`${endDateParam}T23:59:59`);
+      // Las búsquedas personalizadas también necesitan el offset venezolano
+      const start = new Date(`${startDateParam}T00:00:00.000-04:00`);
+      const end = new Date(`${endDateParam}T23:59:59.999-04:00`);
       dateFilter = { gte: start, lte: end };
     }
 
@@ -53,7 +63,7 @@ export async function GET(req: NextRequest) {
     const metodos: Record<string, { usd: number, ves: number }> = {};
     const productos: Record<string, { cantidad: number, ingresos: number }> = {};
     
-    // rounded-4xlESTRUCTURA PARA AGRUPAR POR CLIENTE
+    // ESTRUCTURA PARA AGRUPAR POR CLIENTE
     const clientesMap: Record<string, any> = {};
 
     pedidos.forEach(p => {
@@ -78,7 +88,7 @@ export async function GET(req: NextRequest) {
         montoPendienteUSD += p.totalUSD;
       }
 
-      // rounded-4xlLógica de Agrupación por Cliente
+      // Lógica de Agrupación por Cliente
       const cId = p.clienteId || "anonimo";
       if (!clientesMap[cId]) {
         clientesMap[cId] = {
@@ -119,7 +129,7 @@ export async function GET(req: NextRequest) {
       totalClientes: historialClientes.length,
       metodos: metodosArray,
       topProductos: productosArray,
-      historial: historialClientes // rounded-4xlEnviamos clientes agrupados
+      historial: historialClientes
     }, { status: 200 });
 
   } catch (error) {

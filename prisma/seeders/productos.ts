@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 export async function seedProductos(prisma: PrismaClient) {
   console.log(' Sembrando Menú de Productos...');
 
-  // 1. Buscamos los IDs de las categorías (incluyendo Especial)
+  // 1. Buscamos los IDs de las categorías (Mantenemos el plural que arreglamos antes para que no dé error)
   const catBase = await prisma.categoriaProducto.findFirst({ where: { nombre: 'Base' } });
   const catEspecial = await prisma.categoriaProducto.findFirst({ where: { nombre: 'Especial' } });
   const catTopping = await prisma.categoriaProducto.findFirst({ where: { nombre: 'Topping' } });
@@ -15,46 +15,45 @@ export async function seedProductos(prisma: PrismaClient) {
     throw new Error('Faltan categorías. Corre primero el seed de categorías.');
   }
 
-  // 2. Preparamos los datos tal cual la imagen y las nuevas instrucciones
+  // 2. Preparamos los datos EXACTOS de la nueva imagen
   const productos = [
     // BASES (Crea tu pizza)
-    { nombre: 'Pizza pequeña', descripcion: '6 porciones', precioBase: 6.00, categoriaId: catBase.id },
-    { nombre: 'Pizza mediana', descripcion: '8 porciones', precioBase: 8.00, categoriaId: catBase.id },
-    { nombre: 'Pizza familiar', descripcion: '12 porciones', precioBase: 11.00, categoriaId: catBase.id },
+    { nombre: 'Pizza pequeña', descripcion: '6 slices', precioBase: 6.00, categoriaId: catBase.id },
+    { nombre: 'Pizza mediana', descripcion: '8 slices', precioBase: 9.00, categoriaId: catBase.id }, // Subió a $9
+    { nombre: 'Pizza familiar', descripcion: '12 slices', precioBase: 12.00, categoriaId: catBase.id }, // Subió a $12
 
     // ESPECIALES (Ya armadas)
-    { nombre: 'Pizza 4-Estaciones', descripcion: '4 adicionales distintos', precioBase: 19.99, categoriaId: catEspecial.id },
-    { nombre: 'Pizza Fiesta', descripcion: '4 estaciones doble', precioBase: 24.00, categoriaId: catEspecial.id },
+    { nombre: 'Pizza 4-Estaciones', descripcion: 'Jamón/ Maíz/ tocineta/ Pepperoni', precioBase: 20.00, categoriaId: catEspecial.id }, // Subió a $20
+    { nombre: 'Pizza Fiesta', descripcion: 'Jamón, Maíz, Tocineta, Champiñones, Salami, Aceitunas Negras, Pepperoni, Chuleta A.', precioBase: 25.00, categoriaId: catEspecial.id }, // Subió a $25
 
-    // ADICIONALES (Toppings - Ahora con precioPequena en 1.50)
+    // ADICIONALES (Toppings - Todos con precioPequena en 1.50)
     { nombre: 'Jamón', precioBase: 2.50, precioPequena: 1.50, categoriaId: catTopping.id },
     { nombre: 'Maíz', precioBase: 2.50, precioPequena: 1.50, categoriaId: catTopping.id },
+    { nombre: 'Champiñón', precioBase: 2.50, precioPequena: 1.50, categoriaId: catTopping.id },
     { nombre: 'Tocineta', precioBase: 2.75, precioPequena: 1.50, categoriaId: catTopping.id },
-    { nombre: 'Champiñones', precioBase: 2.50, precioPequena: 1.50, categoriaId: catTopping.id },
     { nombre: 'Pepperoni', precioBase: 2.75, precioPequena: 1.50, categoriaId: catTopping.id },
+    { nombre: 'Aceituna Negras', precioBase: 2.75, precioPequena: 1.50, categoriaId: catTopping.id },
     { nombre: 'Salami', precioBase: 2.75, precioPequena: 1.50, categoriaId: catTopping.id },
-    { nombre: 'Aceitunas Negras', precioBase: 2.75, precioPequena: 1.50, categoriaId: catTopping.id },
     { nombre: 'Salchichón', precioBase: 3.00, precioPequena: 1.50, categoriaId: catTopping.id },
-    { nombre: 'Chuleta Ahumada', precioBase: 3.00, precioPequena: 1.50, categoriaId: catTopping.id },
-    { nombre: 'Anchoas', precioBase: 3.00, precioPequena: 1.50, categoriaId: catTopping.id },
+    { nombre: 'Chuleta ahumada', precioBase: 3.00, precioPequena: 1.50, categoriaId: catTopping.id },
+    { nombre: 'Anchoas', precioBase: 3.50, precioPequena: 1.50, categoriaId: catTopping.id }, // Subió a $3.50
     { nombre: 'Camarones', precioBase: 3.50, precioPequena: 1.50, categoriaId: catTopping.id },
+    { nombre: 'Vegetales', precioBase: 1.00, precioPequena: 1.00, categoriaId: catTopping.id }, // NUEVO: Vegetales $1.00
 
     // EXTRAS & DELIVERY
-    { nombre: 'Borde de queso', precioBase: 3.50, categoriaId: catExtra.id },
-    { nombre: 'Full queso', precioBase: 3.50, categoriaId: catExtra.id },
+    { nombre: 'Borde de Queso', precioBase: 4.00, categoriaId: catExtra.id }, // Subió a $4.00
+    { nombre: 'Full Queso', precioBase: 3.50, categoriaId: catExtra.id },
     { nombre: 'Caja para llevar', precioBase: 1.00, categoriaId: catExtra.id },
     { nombre: 'Servicio Delivery', precioBase: 0.00, categoriaId: catDelivery.id },
 
-    // BEBIDAS
-    { nombre: 'Refresco 1.5 lts', precioBase: 3.00, categoriaId: catBebida.id },
-    { nombre: 'Refresco 1.25 lts', precioBase: 2.50, categoriaId: catBebida.id },
-    { nombre: 'Refresco 1 lts', precioBase: 2.00, categoriaId: catBebida.id },
-    { nombre: 'Refresco Vaso', precioBase: 1.00, categoriaId: catBebida.id },
-    { nombre: 'Té', precioBase: 1.50, categoriaId: catBebida.id },
-    { nombre: 'Lipton', precioBase: 2.50, categoriaId: catBebida.id },
-    { nombre: 'Jugo Yukery', precioBase: 1.50, categoriaId: catBebida.id },
-    { nombre: 'Malta', precioBase: 1.50, categoriaId: catBebida.id },
-    { nombre: 'Agua', precioBase: 1.00, categoriaId: catBebida.id },
+    // BEBIDAS (Nuevas y actualizadas)
+    { nombre: 'Refresco 1.5Lts', precioBase: 3.00, categoriaId: catBebida.id },
+    { nombre: 'Refresco 1Lt', precioBase: 2.00, categoriaId: catBebida.id },
+    { nombre: 'Refresco Lata', precioBase: 1.50, categoriaId: catBebida.id },
+    { nombre: 'Jugo yukery 350ml', precioBase: 1.50, categoriaId: catBebida.id },
+    { nombre: 'Maltin polar', precioBase: 1.50, categoriaId: catBebida.id },
+    { nombre: 'Te Lipton 500 ml', precioBase: 2.50, categoriaId: catBebida.id },
+    { nombre: 'Agua mineral', precioBase: 1.00, categoriaId: catBebida.id },
   ];
 
   // 3. Insertamos o actualizamos
