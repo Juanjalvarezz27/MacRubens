@@ -32,16 +32,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Falta el método de pago" }, { status: 400 });
     }
 
+    // 🔥 LA SOLUCIÓN: Usar el tiempo universal absoluto. 
+    // Prisma y Neon guardarán el timestamp exacto (UTC).
+    // Tu frontend ya está configurado para mostrarlo en 'America/Caracas'.
     const now = new Date();
-    const venezuelaTimeString = now.toLocaleString("en-US", { timeZone: "America/Caracas" });
-    const venezuelaDate = new Date(venezuelaTimeString);
 
     const pedidoCreado = await prisma.$transaction(async (tx) => {
       
       const clienteDb = await tx.cliente.upsert({
         where: { cedula: cliente.cedula },
-        update: { nombre: cliente.nombre, telefono: cliente.telefono, updatedAt: venezuelaDate },
-        create: { cedula: cliente.cedula, nombre: cliente.nombre, telefono: cliente.telefono, createdAt: venezuelaDate, updatedAt: venezuelaDate }
+        update: { nombre: cliente.nombre, telefono: cliente.telefono, updatedAt: now },
+        create: { cedula: cliente.cedula, nombre: cliente.nombre, telefono: cliente.telefono, createdAt: now, updatedAt: now }
       });
 
       const estado = await tx.estadoPedido.findUnique({
@@ -58,8 +59,8 @@ export async function POST(req: NextRequest) {
           totalUSD: totalUSD,
           totalVES: totalVES,
           tasaBCV: tasaBCV,
-          createdAt: venezuelaDate, 
-          updatedAt: venezuelaDate  
+          createdAt: now, 
+          updatedAt: now  
         }
       });
 
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
             montoUSD: totalUSD,
             montoVES: totalVES,
             referencia: referencia || null,
-            createdAt: venezuelaDate 
+            createdAt: now 
           }
         });
       }
