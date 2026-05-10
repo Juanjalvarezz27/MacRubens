@@ -16,7 +16,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         data: { estadoPago: "PAGADO", updatedAt: new Date() }
       });
 
-      // 2. Crear el registro del pago financiero
+      // Borramos cualquier pago fantasma previo para evitar duplicados
+      await tx.pago.deleteMany({ where: { pedidoId: id } });
+
+      // 2. Crear el registro del pago financiero limpio
       await tx.pago.create({
         data: {
           pedidoId: id,
