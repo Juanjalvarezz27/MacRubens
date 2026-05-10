@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     
-    // 🔥 SOLUCIÓN AL ERROR FKEY: Verificamos que el usuario realmente exista en la BD
+    // SOLUCIÓN AL ERROR FKEY: Verificamos que el usuario realmente exista en la BD
     let usuarioIdParaBd = "";
     
     if (token?.sub) {
@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { cliente, cart, tasaBCV, metodoPagoId, referencia, totalUSD, totalVES, estadoPago } = body;
+    
+    // EXTRAEMOS LA NOTA DEL BODY
+    const { cliente, cart, tasaBCV, metodoPagoId, referencia, totalUSD, totalVES, estadoPago, nota } = body;
 
     if (!cart || cart.length === 0) return NextResponse.json({ error: "El ticket está vacío" }, { status: 400 });
     
@@ -32,9 +34,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Falta el método de pago" }, { status: 400 });
     }
 
-    // 🔥 LA SOLUCIÓN: Usar el tiempo universal absoluto. 
     // Prisma y Neon guardarán el timestamp exacto (UTC).
-    // Tu frontend ya está configurado para mostrarlo en 'America/Caracas'.
     const now = new Date();
 
     const pedidoCreado = await prisma.$transaction(async (tx) => {
@@ -53,12 +53,13 @@ export async function POST(req: NextRequest) {
       const pedido = await tx.pedido.create({
         data: {
           clienteId: clienteDb.id,
-          usuarioId: usuarioIdParaBd, // 🔥 Usamos el ID validado
+          usuarioId: usuarioIdParaBd,
           estadoId: estado.id,
           estadoPago: estadoPago, 
           totalUSD: totalUSD,
           totalVES: totalVES,
           tasaBCV: tasaBCV,
+          nota: nota || null, // GUARDAMOS LA NOTA AQUÍ EN LA BASE DE DATOS
           createdAt: now, 
           updatedAt: now  
         }

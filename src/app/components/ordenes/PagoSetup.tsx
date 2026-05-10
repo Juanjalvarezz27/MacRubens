@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CreditCard, Banknote, Smartphone, CheckCircle2, ChevronLeft, Loader2, Trash2, Clock } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, CheckCircle2, ChevronLeft, Loader2, Trash2, Clock, MessageSquare } from "lucide-react";
 import { toast } from "react-toastify";
 import { DatosCliente } from "./ClienteSetup";
 import { CartItem } from "./MenuSetup";
@@ -25,6 +25,7 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
   
   const [selectedMetodo, setSelectedMetodo] = useState<MetodoPago | null>(null);
   const [referencia, setReferencia] = useState("");
+  const [nota, setNota] = useState(""); // NUEVO ESTADO PARA LA NOTA
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [esPagado, setEsPagado] = useState(true);
@@ -63,10 +64,10 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
         totalVES,
         estadoPago: esPagado ? "PAGADO" : "PENDIENTE",
         metodoPagoId: esPagado ? selectedMetodo?.id : null,
-        referencia: (esPagado && requiresReference) ? referencia.trim() : null
+        referencia: (esPagado && requiresReference) ? referencia.trim() : null,
+        nota: nota.trim() || null // ENVIAMOS LA NOTA
       };
 
-      // MAGIA: Detectamos si estamos creando o editando
       const pedidoActivoId = localStorage.getItem("macrubens_pedido_activo");
       const url = pedidoActivoId ? `/api/pedidos/${pedidoActivoId}` : "/api/pedidos";
       const method = pedidoActivoId ? "PUT" : "POST";
@@ -80,7 +81,6 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      // Mensajes dinámicos según la acción
       if (pedidoActivoId) {
         toast.success("¡Orden Actualizada Exitosamente!");
       } else {
@@ -191,7 +191,19 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
             <p className="text-xs font-bold text-[#294C29]/50 mt-2">La orden se enviará a cocina y el estado de la cuenta quedará por cobrar.</p>
           </div>
         )}
+      </div>
 
+      {/* NUEVO TEXTAREA PARA LAS NOTAS */}
+      <div className="mt-8 space-y-2 animate-in slide-in-from-bottom-4 duration-300">
+        <label className="text-xs font-semibold text-[#294C29]/70 uppercase tracking-[0.15em] pl-1 flex items-center gap-2">
+          <MessageSquare className="w-4 h-4" /> Notas para Cocina (Opcional)
+        </label>
+        <textarea
+          value={nota}
+          onChange={(e) => setNota(e.target.value)}
+          placeholder="Ej. Sin cebolla, mucha salsa, cliente espera en el carro..."
+          className="w-full bg-[#FDF8F1] text-[#294C29] font-medium text-sm rounded-2xl p-4 focus:outline-none border border-[#294C29]/10 focus:border-[#B43E17]/50 transition-all resize-none min-h-20"
+        />
       </div>
 
       <div className="mt-8 pt-6 border-t border-[#294C29]/10 flex flex-col gap-3">
@@ -206,7 +218,6 @@ export default function PagoSetup({ cliente, cart, tasaBCV, totalUSD, totalVES, 
             <>
               {esPagado ? <CheckCircle2 className="w-6 h-6 shrink-0" /> : <Clock className="w-6 h-6 shrink-0" />}
               <span className="text-center leading-tight">
-                {/* Texto dinámico si estamos editando o creando */}
                 {localStorage.getItem("macrubens_pedido_activo") 
                   ? "Guardar Cambios" 
                   : (esPagado ? "Confirmar y Facturar" : "Registrar Orden Pendiente")}

@@ -74,23 +74,26 @@ enum EstadoPago {
 }
 
 model Pedido {
-  id             String          @id @default(cuid())
-  clienteId      String
-  cliente        Cliente         @relation(fields: [clienteId], references: [id])
-  usuarioId      String
-  usuario        Usuario         @relation(fields: [usuarioId], references: [id])
-  estadoId       String
-  estado         EstadoPedido    @relation(fields: [estadoId], references: [id])
+  id          String   @id @default(cuid())
+  clienteId   String
+  cliente     Cliente  @relation(fields: [clienteId], references: [id])
+  usuarioId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  estadoId    String
+  estado      EstadoPedido @relation(fields: [estadoId], references: [id])
+
+  estadoPago  EstadoPago @default(PAGADO)
+
+  totalUSD    Float
+  totalVES    Float
+  tasaBCV     Float
   
-  estadoPago     EstadoPago      @default(PAGADO)
-  
-  totalUSD       Float
-  totalVES       Float
-  tasaBCV        Float          
-  detalles       DetallePedido[]
-  pagos          Pago[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  nota        String?  
+
+  detalles    DetallePedido[]
+  pagos       Pago[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model DetallePedido {
