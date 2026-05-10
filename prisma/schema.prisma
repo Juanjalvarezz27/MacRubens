@@ -119,3 +119,10 @@ model Pago {
   referencia   String?    // Referencia de la transferencia o punto
   createdAt    DateTime   @default(now())
 }
+
+model Configuracion {
+  id        String   @id @default(cuid())
+  clave     String   @unique
+  valor     String
+  updatedAt DateTime @updatedAt
+}
