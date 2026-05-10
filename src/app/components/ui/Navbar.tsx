@@ -17,8 +17,9 @@ import {
   LogOut,
   UserCircle,
   ChevronDown,
+  ChefHat, // NUEVO ÍCONO
 } from "lucide-react";
-import ConfirmModal from "../../components/ui/ConfirmModal";
+import ConfirmModal from "../../components/ui/ConfirmModal"; // Ajusta la ruta si es necesario
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,8 +27,10 @@ export default function Navbar() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const pathname = usePathname();
 
+  // AGREGAMOS LA RUTA DE COCINA
   const mainLinks = [
     { name: "Órdenes", href: "/home", icon: Pizza },
+    { name: "Cocina", href: "/home/cocina", icon: ChefHat }, 
     { name: "Pendientes", href: "/home/pendientes", icon: BarChart3 },
     { name: "Cierre Diario", href: "/home/cierre", icon: Wallet },
     { name: "Clientes", href: "/home/clientes", icon: Users },
@@ -41,6 +44,7 @@ export default function Navbar() {
 
   const mobileLinks = [
     { name: "Órdenes", href: "/home", icon: Pizza },
+    { name: "Cocina", href: "/home/cocina", icon: ChefHat }, // AGREGAMOS AQUÍ TAMBIÉN
     { name: "Est. Diarias", href: "/home/estadisticas/diarias", icon: BarChart3 },
     { name: "Pendientes", href: "/home/pendientes", icon: BarChart3 },
     { name: "Cierre Diario", href: "/home/cierre", icon: Wallet },
@@ -59,7 +63,7 @@ export default function Navbar() {
         <div className="w-full px-4 md:px-8">
           <div className="flex items-center justify-between h-24">
             
-            {/* LOGO Y MARCA (Visible en Desktop y Mobile) */}
+            {/* LOGO Y MARCA */}
             <Link
               href="/home"
               className="flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 shrink-0"
@@ -107,7 +111,7 @@ export default function Navbar() {
                 );
               })}
 
-              {/* DROPDOWN ESTADÍSTICAS DESKTOP CORREGIDO */}
+              {/* DROPDOWN ESTADÍSTICAS */}
               <div 
                 className="relative"
                 onMouseEnter={() => setIsStatsOpen(true)}
@@ -131,7 +135,6 @@ export default function Navbar() {
                 </button>
 
                 {isStatsOpen && (
-                  /* Contenedor "puente" con padding (pt-2) para evitar que el hover se pierda */
                   <div className="absolute top-full left-0 pt-2 w-48">
                     <div className="bg-[#1B361B] border border-[#F6E4C9]/10 rounded-2xl shadow-2xl py-2 animate-in fade-in zoom-in-95 duration-200">
                       {statsLinks.map((subLink) => (
@@ -154,7 +157,7 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* PERFIL Y LOGOUT DESKTOP */}
+            {/* PERFIL Y LOGOUT */}
             <div className="hidden xl:flex items-center gap-3 border-l border-[#F6E4C9]/20 pl-4 ml-2">
               <Link
                 href="/home/perfil"
