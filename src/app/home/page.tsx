@@ -356,6 +356,16 @@ function POSContent() {
         </div>
       </div>
 
+      {/* BARRA FLOTANTE MOBILE */}
+      {step > 1 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#294C29]/10 rounded-t-3xl p-3 shadow-[0_-10px_20px_rgba(0,0,0,0.1)] z-40">
+          <button onClick={() => setIsMobileCartOpen(true)} className="w-full bg-[#294C29] text-[#F6E4C9] py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-sm flex justify-between items-center shadow-md active:scale-95 transition-transform">
+            <div className="flex items-center gap-2"><ShoppingBag className="w-5 h-5" /> <span>Ticket ({cart.length})</span></div>
+            <div className="flex items-center gap-1"><span>${totalUSD.toFixed(2)}</span><ChevronUp className="w-5 h-5" /></div>
+          </button>
+        </div>
+      )}
+
       {/* TICKET DE LA DERECHA */}
       <div className={`fixed inset-0 z-50 bg-[#FDF8F1] flex flex-col transition-transform duration-300 ease-in-out ${isMobileCartOpen ? "translate-y-0" : "translate-y-full"} lg:static lg:translate-y-0 lg:w-115 lg:bg-white lg:border-l lg:border-[#294C29]/10 lg:h-[calc(100vh-80px)] lg:z-auto ${step === 1 ? "lg:flex hidden" : "flex"}`}>
         <div className="p-6 border-b border-[#294C29]/10 bg-white flex justify-between items-center">
