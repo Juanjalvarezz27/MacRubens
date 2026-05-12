@@ -169,17 +169,17 @@ export default function EstadisticasDiariasPage() {
         <ResumenGraficoDia pedidos={pedidos} />
       </div>
 
-      {/* 🔥 RESUMEN DE PRODUCCIÓN (CORREGIDO: 1 COLUMNA EN MÓVIL) */}
+      {/* RESUMEN DE PRODUCCIÓN (3 Columnas para que respiren los nombres) */}
       {conteoProductos.length > 0 && (
         <div className="max-w-5xl mx-auto mb-10 bg-white rounded-4xl p-6 lg:p-8 border border-[#294C29]/10 shadow-sm">
           <h3 className="font-black text-[#294C29] uppercase tracking-tighter text-lg flex items-center gap-2 mb-6 pl-1">
             <Pizza className="w-5 h-5 text-[#B43E17]" /> Resumen de Producción
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {conteoProductos.map((prod) => (
-              <div key={prod.nombre} className="bg-[#FDF8F1] px-5 py-4 rounded-2xl border border-[#294C29]/5 flex justify-between items-center transition-transform hover:scale-105 shadow-sm sm:shadow-none">
-                <span className="font-bold text-[#294C29] text-[14px] uppercase leading-tight mr-2 line-clamp-1">{prod.nombre}</span>
-                <span className="font-black text-[#B43E17] text-xl bg-[#B43E17]/10 px-4 py-1.5 rounded-xl shrink-0">{prod.cantidad}</span>
+              <div key={prod.nombre} className="bg-[#FDF8F1] px-6 py-5 rounded-2xl border border-[#294C29]/5 flex justify-between items-center transition-transform hover:scale-105 shadow-sm sm:shadow-none">
+                <span className="font-bold text-[#294C29] text-[15px] uppercase leading-tight mr-4 truncate">{prod.nombre}</span>
+                <span className="font-black text-[#B43E17] text-2xl bg-[#B43E17]/10 px-5 py-2 rounded-xl shrink-0">{prod.cantidad}</span>
               </div>
             ))}
           </div>
