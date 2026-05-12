@@ -5,12 +5,13 @@ import {
   Loader2, Calendar, ChevronDown, DollarSign, ShoppingBag, Users,
   TrendingUp, PieChart, Award, Banknote, CreditCard, Smartphone,
   Clock, Search, Filter, X, ChevronLeft, ChevronRight, FileText,
-  CheckCircle2, User
+  CheckCircle2, User, Pizza
 } from "lucide-react";
 import { toast } from "react-toastify";
 
 interface MetodoData { nombre: string; usd: number; ves: number; }
 interface ProductoData { nombre: string; cantidad: number; ingresos: number; }
+interface ProduccionData { nombre: string; cantidad: number; } // Nueva interfaz
 
 interface OrdenHistorial {
   id: string;
@@ -38,6 +39,7 @@ interface GeneralStats {
   totalPedidosPagados: number;
   totalClientes: number;
   metodos: MetodoData[];
+  produccionBases: ProduccionData[]; // Recibe solo las pizzas
   topProductos: ProductoData[];
   historial: ClienteHistorial[];
 }
@@ -103,7 +105,6 @@ export default function EstadisticasGeneralesPage() {
     return <CreditCard className="w-5 h-5" />;
   };
 
-  // CORRECCIÓN: Fuerza ESTRICTAMENTE la zona horaria de Venezuela (UTC-4)
   const formatFecha = (iso: string) => {
     try {
       const date = new Date(iso);
@@ -117,7 +118,7 @@ export default function EstadisticasGeneralesPage() {
         hour12: true
       }).replace(',', ' -');
     } catch (e) {
-      return iso; // Fallback
+      return iso;
     }
   };
 
@@ -146,7 +147,6 @@ export default function EstadisticasGeneralesPage() {
 
       {/* HEADER Y FILTROS */}
       <div className="max-w-6xl mx-auto flex flex-col xl:flex-row justify-between items-center xl:items-end mb-8 sm:mb-10 gap-6 z-20 relative">
-
         <div className="flex flex-col items-center xl:items-start space-y-2 w-full xl:w-auto text-center xl:text-left">
           <h1 className="text-4xl sm:text-5xl md:text-5xl font-black text-[#294C29] uppercase tracking-tighter leading-none">
             Estadísticas <span className="text-[#B43E17]">Generales</span>
@@ -158,14 +158,9 @@ export default function EstadisticasGeneralesPage() {
         </div>
 
         <div className="w-full xl:w-auto flex flex-col md:flex-row items-center gap-4">
-
-          {/* LÓGICA CONDICIONAL: SI ESTÁ EN CUSTOM, MUESTRA ESTO Y OCULTA EL RESTO */}
           {periodo === "custom" ? (
             <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2 rounded-[1.25rem] border border-[#294C29]/10 shadow-sm animate-in fade-in slide-in-from-right-4">
-
               <div className="flex items-center justify-center gap-1 sm:gap-2 w-full sm:w-auto bg-[#FDF8F1] sm:bg-transparent rounded-xl p-2 sm:p-0">
-
-                {/* FECHA INICIO (Input mágico 100% clickeable) */}
                 <div className="relative w-28 sm:w-32 h-10 flex items-center justify-center">
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <span className="font-bold text-xs sm:text-sm tracking-wider uppercase text-center">
@@ -182,10 +177,7 @@ export default function EstadisticasGeneralesPage() {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   />
                 </div>
-
                 <span className="font-black text-[#294C29]/20 shrink-0">-</span>
-
-                {/* FECHA FINAL (Input mágico 100% clickeable) */}
                 <div className="relative w-28 sm:w-32 h-10 flex items-center justify-center">
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <span className="font-bold text-xs sm:text-sm tracking-wider uppercase text-center">
@@ -200,9 +192,7 @@ export default function EstadisticasGeneralesPage() {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   />
                 </div>
-
               </div>
-
               <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                 <button onClick={handleCustomSearch} className="flex-1 sm:flex-none flex justify-center bg-[#B43E17] hover:bg-[#9F280A] text-[#F6E4C9] p-3 rounded-xl transition-colors shadow-sm">
                   <Search className="w-5 h-5" />
@@ -220,7 +210,6 @@ export default function EstadisticasGeneralesPage() {
               </div>
             </div>
           ) : (
-            /* DROPDOWN SELECTOR DE PERÍODO (Muestra normal cuando NO es custom) */
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto animate-in fade-in">
               <div className="w-full sm:w-64 relative">
                 <button onClick={() => setIsFilterOpen(!isFilterOpen)} className="w-full bg-white text-[#B43E17] font-black uppercase tracking-widest text-xs sm:text-sm rounded-[1.25rem] py-4 px-4 sm:px-5 flex items-center justify-between border border-[#294C29]/10 hover:border-[#B43E17]/50 transition-all shadow-sm focus:outline-none">
@@ -230,9 +219,7 @@ export default function EstadisticasGeneralesPage() {
                   </div>
                   <ChevronDown className={`w-5 h-5 transition-transform duration-200 shrink-0 ${isFilterOpen ? "rotate-180" : ""}`} />
                 </button>
-
                 {isFilterOpen && <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)}></div>}
-
                 <div className={`absolute top-full right-0 mt-2 w-full bg-white border border-[#294C29]/10 rounded-2xl shadow-xl overflow-hidden z-20 transition-all duration-200 origin-top ${isFilterOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}>
                   {periodOptions.map((opt) => (
                     <button key={opt.value} onClick={() => handleSelectPeriod(opt.value)} className={`w-full text-left px-5 py-4 text-xs sm:text-sm font-black uppercase tracking-widest transition-colors ${periodo === opt.value ? "bg-[#B43E17]/10 text-[#B43E17]" : "text-[#294C29]/60 hover:bg-[#FDF8F1] hover:text-[#294C29]"}`}>
@@ -241,14 +228,12 @@ export default function EstadisticasGeneralesPage() {
                   ))}
                 </div>
               </div>
-
               <button onClick={() => handleSelectPeriod("custom")} className="bg-white text-[#294C29]/60 hover:text-[#B43E17] hover:border-[#B43E17]/30 font-black uppercase tracking-widest text-xs sm:text-sm rounded-[1.25rem] py-4 px-4 sm:px-5 flex items-center justify-center gap-2 border border-[#294C29]/10 transition-all shadow-sm focus:outline-none shrink-0">
                 <Filter className="w-5 h-5" />
                 <span className="hidden sm:inline">Fechas</span>
               </button>
             </div>
           )}
-
         </div>
       </div>
 
@@ -314,9 +299,25 @@ export default function EstadisticasGeneralesPage() {
           </div>
         </div>
 
+        {/* CUADRÍCULA DE PRODUCCIÓN (SOLO PIZZAS) */}
+        {stats && stats.produccionBases.length > 0 && (
+          <div className="bg-white rounded-4xl p-6 lg:p-8 border border-[#294C29]/10 shadow-sm mt-6">
+            <h3 className="font-black text-[#294C29] uppercase tracking-tighter text-lg flex items-center gap-2 mb-6 pl-1">
+              <Pizza className="w-5 h-5 text-[#B43E17]" /> Producción
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+              {stats.produccionBases.map((prod) => (
+                <div key={prod.nombre} className="bg-[#FDF8F1] px-5 py-4 rounded-2xl border border-[#294C29]/5 flex justify-between items-center transition-transform hover:scale-105 shadow-sm sm:shadow-none">
+                  <span className="font-bold text-[#294C29] text-[14px] uppercase leading-tight mr-2 line-clamp-1" title={prod.nombre}>{prod.nombre}</span>
+                  <span className="font-black text-[#B43E17] text-xl bg-[#B43E17]/10 px-4 py-1.5 rounded-xl shrink-0">{prod.cantidad}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* MÉTODOS Y TOP PRODUCTOS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-6">
-
           <div className="bg-white rounded-4xl p-5 sm:p-6 lg:p-8 border border-[#294C29]/10 shadow-sm">
             <h3 className="font-black text-[#294C29] uppercase tracking-tighter text-xl flex items-center gap-2 mb-6">
               <PieChart className="w-6 h-6 text-[#B43E17]" /> Desglose de Pagos
@@ -349,7 +350,7 @@ export default function EstadisticasGeneralesPage() {
             <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/5 rounded-bl-full -mr-10 -mt-10"></div>
             <div className="flex justify-between items-start mb-6 relative z-10">
               <h3 className="font-black uppercase tracking-tighter text-xl flex items-center gap-2">
-                <Award className="w-6 h-6 text-[#EADDCA]" /> Top 5 Productos
+                <Award className="w-6 h-6 text-[#EADDCA]" /> Top 5 Productos Financieros
               </h3>
             </div>
             {stats?.topProductos.length === 0 ? (
@@ -384,7 +385,6 @@ export default function EstadisticasGeneralesPage() {
         {/* LIBRO MAYOR DE CLIENTES */}
         {stats?.historial && stats.historial.length > 0 && (
           <div className="bg-white rounded-4xl border border-[#294C29]/10 shadow-sm mt-8 overflow-hidden transition-all">
-
             <button onClick={() => setIsLedgerOpen(!isLedgerOpen)} className="w-full flex flex-col md:flex-row justify-between items-start md:items-center p-5 sm:p-6 lg:p-8 bg-white hover:bg-[#FDF8F1] transition-colors focus:outline-none gap-4">
               <h3 className="font-black text-[#294C29] uppercase tracking-tighter text-xl sm:text-2xl flex items-center gap-2">
                 <FileText className="w-6 h-6 text-[#B43E17]" /> Actividad por Cliente
@@ -406,7 +406,6 @@ export default function EstadisticasGeneralesPage() {
                     const isExpanded = expandedClienteId === cliente.id;
                     return (
                       <div key={cliente.id} className="border border-[#294C29]/10 rounded-2xl overflow-hidden bg-white shadow-sm">
-
                         <div
                           onClick={() => setExpandedClienteId(isExpanded ? null : cliente.id)}
                           className={`p-4 sm:p-5 flex flex-col md:flex-row justify-between cursor-pointer transition-colors ${isExpanded ? 'bg-[#294C29]/5' : 'hover:bg-[#FDF8F1]'}`}
