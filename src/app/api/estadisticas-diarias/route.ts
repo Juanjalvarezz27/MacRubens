@@ -44,9 +44,25 @@ export async function GET() {
       }
     });
 
+    // CONTEO DE PRODUCCIÓN (Cantidades de productos pagados)
+    const conteoMap: Record<string, number> = {};
+    pedidos.forEach(pedido => {
+      if (pedido.estadoPago === "PAGADO") {
+        pedido.detalles.forEach(detalle => {
+          const nombre = detalle.producto?.nombre || "Desconocido";
+          conteoMap[nombre] = (conteoMap[nombre] || 0) + detalle.cantidad;
+        });
+      }
+    });
+
+    const conteoProductos = Object.entries(conteoMap)
+      .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad); // Ordenar de mayor a menor
+
     return NextResponse.json({
       fecha: inicioDia.toISOString(),
-      pedidos
+      pedidos,
+      conteoProductos // Lo mandamos a la vista
     }, { status: 200 });
 
   } catch (error) {

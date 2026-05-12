@@ -18,7 +18,6 @@ export default function ResumenGraficoDia({ pedidos }: { pedidos: Pedido[] }) {
   
   pedidosPagados.forEach(pedido => {
     pedido.pagos.forEach(pago => {
-      // Blindaje: Si no hay nombre de método, le ponemos "Otro"
       const nombre = pago.metodo?.nombre || "Otro";
       if (!metodosData[nombre]) metodosData[nombre] = { usd: 0, ves: 0 };
       metodosData[nombre].usd += pago.montoUSD;
@@ -33,7 +32,7 @@ export default function ResumenGraficoDia({ pedidos }: { pedidos: Pedido[] }) {
       nombre,
       usd: montos.usd,
       ves: montos.ves,
-      porcentaje: totalGeneralUSD > 0 ? ((montos.usd / totalGeneralUSD) * 100).toFixed(0) : "0", // Blindaje: Evita dividir por cero
+      porcentaje: totalGeneralUSD > 0 ? ((montos.usd / totalGeneralUSD) * 100).toFixed(0) : "0", 
       color: colors[index % colors.length]
     }));
 
@@ -41,7 +40,6 @@ export default function ResumenGraficoDia({ pedidos }: { pedidos: Pedido[] }) {
   
   pedidosPagados.forEach(pedido => {
     pedido.detalles.forEach(detalle => {
-      // Blindaje: Si el producto fue borrado, muestra "Desconocido"
       const nombre = detalle.producto?.nombre || "Desconocido";
       if (!productosData[nombre]) productosData[nombre] = { cantidad: 0, ingresos: 0 };
       productosData[nombre].cantidad += detalle.cantidad;
@@ -58,7 +56,6 @@ export default function ResumenGraficoDia({ pedidos }: { pedidos: Pedido[] }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-      
       {/* GRÁFICA 1: INGRESOS POR MÉTODO */}
       <div className="bg-white rounded-4xl text-center p-6 lg:p-8 border border-[#294C29]/10 shadow-sm flex flex-col justify-between">
         <h3 className="font-black text-[#294C29] uppercase tracking-tighter text-lg flex items-center justify-center sm:justify-start gap-2 mb-6">
@@ -67,12 +64,12 @@ export default function ResumenGraficoDia({ pedidos }: { pedidos: Pedido[] }) {
         
         <div className="flex flex-col sm:flex-row items-center gap-8 lg:gap-10">
           <div className="relative w-32 h-32 rounded-full flex items-center justify-center shrink-0 shadow-inner" 
-               style={{
-                 background: `conic-gradient(${metodosArray.map((m, i, arr) => {
-                   const prevTotal = arr.slice(0, i).reduce((acc, curr) => acc + Number(curr.porcentaje), 0);
-                   return `${m.color.replace('bg-[', '').replace(']', '')} ${prevTotal}% ${prevTotal + Number(m.porcentaje)}%`;
-                 }).join(', ')})`
-               }}>
+            style={{
+              background: `conic-gradient(${metodosArray.map((m, i, arr) => {
+                const prevTotal = arr.slice(0, i).reduce((acc, curr) => acc + Number(curr.porcentaje), 0);
+                return `${m.color.replace('bg-[', '').replace(']', '')} ${prevTotal}% ${prevTotal + Number(m.porcentaje)}%`;
+              }).join(', ')})`
+            }}>
             <div className="w-20 h-20 bg-white rounded-full flex flex-col items-center justify-center shadow-sm">
               <span className="text-[10px] font-bold text-[#294C29]/40 uppercase">Total</span>
               <span className="font-black text-[#294C29] text-sm">${totalGeneralUSD.toFixed(0)}</span>
@@ -129,7 +126,6 @@ export default function ResumenGraficoDia({ pedidos }: { pedidos: Pedido[] }) {
           })}
         </div>
       </div>
-
     </div>
   );
 }

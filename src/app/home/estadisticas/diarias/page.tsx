@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Calendar, ChevronDown, ChevronUp, Pizza, User, Clock, CheckCircle2, AlertCircle, CreditCard, Edit, Trash2 } from "lucide-react";
+import { 
+  Loader2, Calendar, ChevronDown, ChevronUp, Pizza, User, 
+  Clock, CheckCircle2, CreditCard, Edit, Trash2 
+} from "lucide-react";
 import { toast } from "react-toastify";
 import ResumenGraficoDia from "../../../components/estadisticas/ResumenGraficoDia";
 import ConfirmModal from "../../../components/ui/ConfirmModal";
@@ -29,11 +32,11 @@ interface Pedido {
 export default function EstadisticasDiariasPage() {
   const router = useRouter();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [conteoProductos, setConteoProductos] = useState<{nombre: string, cantidad: number}[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedDetalles, setExpandedDetalles] = useState<Record<string, boolean>>({});
-
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
 
   const fetchEstadisticas = async () => {
@@ -43,6 +46,7 @@ export default function EstadisticasDiariasPage() {
       if (!res.ok) throw new Error("Error al obtener los datos");
       const json = await res.json();
       setPedidos(json.pedidos);
+      setConteoProductos(json.conteoProductos || []);
     } catch (error) {
       toast.error("No se pudieron cargar las estadísticas");
     } finally {
@@ -131,12 +135,13 @@ export default function EstadisticasDiariasPage() {
         onClose={() => setOrderToDelete(null)}
         onConfirm={handleDeleteConfirm}
         title="¿Eliminar Orden?"
-        message="¿Estás seguro de que deseas eliminar esta orden del sistema? Esto restará el dinero de las estadísticas de hoy. Esta acción no se puede deshacer."
+        message="¿Estás seguro de que deseas eliminar esta orden? Esta acción restará el monto de las estadísticas. No se puede deshacer."
         confirmText="Eliminar"
         cancelText="Cancelar"
         isDestructive={true}
       />
 
+      {/* HEADER */}
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div className="flex flex-col items-center lg:items-start space-y-2 w-full md:w-auto text-center md:text-left">
           <h1 className="text-5xl md:text-5xl font-black text-[#294C29] uppercase tracking-tighter leading-none">
@@ -161,15 +166,33 @@ export default function EstadisticasDiariasPage() {
       </div>
 
       <div className="max-w-5xl mx-auto">
-         <ResumenGraficoDia pedidos={pedidos} />
+        <ResumenGraficoDia pedidos={pedidos} />
       </div>
 
+      {/* 🔥 RESUMEN DE PRODUCCIÓN (CORREGIDO: 1 COLUMNA EN MÓVIL) */}
+      {conteoProductos.length > 0 && (
+        <div className="max-w-5xl mx-auto mb-10 bg-white rounded-4xl p-6 lg:p-8 border border-[#294C29]/10 shadow-sm">
+          <h3 className="font-black text-[#294C29] uppercase tracking-tighter text-lg flex items-center gap-2 mb-6 pl-1">
+            <Pizza className="w-5 h-5 text-[#B43E17]" /> Resumen de Producción
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {conteoProductos.map((prod) => (
+              <div key={prod.nombre} className="bg-[#FDF8F1] px-5 py-4 rounded-2xl border border-[#294C29]/5 flex justify-between items-center transition-transform hover:scale-105 shadow-sm sm:shadow-none">
+                <span className="font-bold text-[#294C29] text-[14px] uppercase leading-tight mr-2 line-clamp-1">{prod.nombre}</span>
+                <span className="font-black text-[#B43E17] text-xl bg-[#B43E17]/10 px-4 py-1.5 rounded-xl shrink-0">{prod.cantidad}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* LISTADO DE ÓRDENES */}
       <div className="max-w-5xl mx-auto">
         {pedidos.length === 0 ? (
           <div className="bg-white rounded-3xl p-16 text-center border border-[#294C29]/10 shadow-sm">
             <Pizza className="w-16 h-16 text-[#294C29]/20 mx-auto mb-4" />
             <h2 className="text-xl font-black text-[#294C29] uppercase tracking-tighter">Sin movimientos</h2>
-            <p className="font-bold text-[#294C29]/50 text-sm mt-2">Aún no se han registrado órdenes en el día de hoy.</p>
+            <p className="font-bold text-[#294C29]/50 text-sm mt-2">Aún no se han registrado órdenes hoy.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -180,11 +203,7 @@ export default function EstadisticasDiariasPage() {
 
               return (
                 <div key={pedido.id} className={`bg-white rounded-4xl border-2 transition-all shadow-sm overflow-hidden ${isPendiente ? "border-[#B43E17]/30" : "border-[#294C29]/5 hover:border-[#294C29]/20"}`}>
-                  
-                  <div 
-                    onClick={() => setExpandedId(isExpanded ? null : pedido.id)}
-                    className="p-5 lg:p-6 cursor-pointer flex flex-col lg:flex-row lg:items-center justify-between gap-4"
-                  >
+                  <div onClick={() => setExpandedId(isExpanded ? null : pedido.id)} className="p-5 lg:p-6 cursor-pointer flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${isPendiente ? "bg-[#B43E17]/10 text-[#B43E17]" : "bg-[#FDF8F1] text-[#294C29]"}`}>
                         <User className="w-6 h-6" />
@@ -203,13 +222,9 @@ export default function EstadisticasDiariasPage() {
                         <span className="block text-2xl font-black text-[#294C29] leading-none">${pedido.totalUSD.toFixed(2)}</span>
                         <span className="text-[10px] font-black text-[#B43E17] uppercase tracking-widest mt-1">Bs. {pedido.totalVES.toFixed(2)}</span>
                       </div>
-                      
                       <div className="flex items-center gap-3">
                         {isPendiente ? (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); router.push(`/home?pedidoId=${pedido.id}`); }}
-                            className="bg-[#B43E17] hover:bg-[#9F280A] text-white px-4 py-2 rounded-xl uppercase tracking-widest text-[10px] font-black flex items-center gap-1.5 transition-colors shadow-sm"
-                          >
+                          <button onClick={(e) => { e.stopPropagation(); router.push(`/home?pedidoId=${pedido.id}`); }} className="bg-[#B43E17] hover:bg-[#9F280A] text-white px-4 py-2 rounded-xl uppercase tracking-widest text-[10px] font-black flex items-center gap-1.5 transition-colors shadow-sm">
                             <CreditCard className="w-4 h-4" /> Pagar
                           </button>
                         ) : (
@@ -217,105 +232,56 @@ export default function EstadisticasDiariasPage() {
                             <CheckCircle2 className="w-3 h-3" /> {pedido.pagos[0]?.metodo?.nombre || "Pagado"}
                           </span>
                         )}
-
                         <div className="flex items-center gap-1 bg-[#FDF8F1] rounded-xl p-1">
-                          {/* NUEVO BOTÓN DE EDITAR: Te lleva a la caja en modo "edit" */}
-                          <button 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              router.push(`/home?pedidoId=${pedido.id}&action=edit`); 
-                            }}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#294C29]/50 hover:text-[#294C29] hover:bg-white transition-colors"
-                            title="Editar Orden Completa"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setOrderToDelete(pedido.id); }}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#294C29]/50 hover:text-[#B43E17] hover:bg-white transition-colors"
-                            title="Eliminar Orden"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); router.push(`/home?pedidoId=${pedido.id}&action=edit`); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#294C29]/50 hover:text-[#294C29] hover:bg-white transition-colors"><Edit className="w-4 h-4" /></button>
+                          <button onClick={(e) => { e.stopPropagation(); setOrderToDelete(pedido.id); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#294C29]/50 hover:text-[#B43E17] hover:bg-white transition-colors"><Trash2 className="w-4 h-4" /></button>
                         </div>
-
-                        <div className="w-8 h-8 bg-[#FDF8F1] rounded-full flex items-center justify-center text-[#294C29]">
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </div>
+                        <div className="w-8 h-8 bg-[#FDF8F1] rounded-full flex items-center justify-center text-[#294C29]">{isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</div>
                       </div>
                     </div>
                   </div>
 
                   {isExpanded && (
                     <div className="bg-[#FDF8F1]/50 border-t border-[#294C29]/10 p-6 lg:p-8 animate-in slide-in-from-top-4 duration-300">
-                      
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
                         {detallesOrganizados.map(detalle => {
-                          
                           const itemTotalUSD = detalle.subtotal + (detalle.subDetalles?.reduce((acc, sub) => acc + sub.subtotal, 0) || 0);
                           const itemTotalVES = itemTotalUSD * pedido.tasaBCV;
-                          
                           const tieneExtras = detalle.subDetalles && detalle.subDetalles.length > 0;
                           const isItemExpanded = expandedDetalles[detalle.id] || false;
 
                           return (
                             <div key={detalle.id} className="bg-white p-6 rounded-4xl border border-[#294C29]/10 shadow-sm flex flex-col h-fit">
-                              
                               <div className="mb-4 flex justify-between items-start gap-4">
-                                <h4 className="font-black text-[#294C29] text-[17px] uppercase tracking-tighter flex items-baseline gap-1.5">
-                                  <span className="text-[#B43E17] text-lg">{detalle.cantidad}X</span> {detalle.producto?.nombre || "Desconocido"}
-                                </h4>
-                                
-                                {tieneExtras && (
-                                  <button 
-                                    onClick={(e) => toggleDetalle(detalle.id, e)}
-                                    className="w-8 h-8 rounded-full bg-[#FDF8F1] flex items-center justify-center text-[#294C29] hover:bg-[#EADDCA] transition-colors shrink-0"
-                                  >
-                                    {isItemExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                  </button>
-                                )}
+                                <h4 className="font-black text-[#294C29] text-[17px] uppercase tracking-tighter flex items-baseline gap-1.5"><span className="text-[#B43E17] text-lg">{detalle.cantidad}X</span> {detalle.producto?.nombre || "Desconocido"}</h4>
+                                {tieneExtras && (<button onClick={(e) => toggleDetalle(detalle.id, e)} className="w-8 h-8 rounded-full bg-[#FDF8F1] flex items-center justify-center text-[#294C29] hover:bg-[#EADDCA] transition-colors shrink-0">{isItemExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</button>)}
                               </div>
-                              
                               {tieneExtras && isItemExpanded && (
                                 <div className="mb-4 pl-4 border-l-[3px] border-[#B43E17]/20 space-y-4 animate-in slide-in-from-top-2">
                                   {detalle.subDetalles.map((sub, idx) => (
                                     <div key={`${sub.id}-${idx}`} className="flex flex-col">
-                                      <span className="font-bold text-[#294C29] text-[15px] tracking-tight">
-                                        + {sub.cantidad}x {sub.producto?.nombre || "Extra"}
-                                      </span>
-                                      <span className="text-[12px] font-bold text-gray-400 mt-1 tracking-wide">
-                                        ${sub.precioUnitario.toFixed(2)} <span className="text-gray-300 mx-1">|</span> Bs. {(sub.precioUnitario * pedido.tasaBCV).toFixed(2)}
-                                      </span>
+                                      <span className="font-bold text-[#294C29] text-[15px] tracking-tight">+ {sub.cantidad}x {sub.producto?.nombre || "Extra"}</span>
+                                      <span className="text-[12px] font-bold text-gray-400 mt-1 tracking-wide">${sub.precioUnitario.toFixed(2)} <span className="text-gray-300 mx-1">|</span> Bs. {(sub.precioUnitario * pedido.tasaBCV).toFixed(2)}</span>
                                     </div>
                                   ))}
                                 </div>
                               )}
-
                               <div className="flex justify-between items-end pt-5 border-t border-gray-100 mt-2">
-                                <div className="bg-[#FDF8F1] px-4 py-2 rounded-xl flex items-center justify-center border border-[#294C29]/5">
-                                   <span className="font-black text-sm uppercase tracking-widest text-[#294C29]/60">Cant: <span className="text-lg text-[#294C29] ml-1">{detalle.cantidad}</span></span>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                  <span className="font-black text-[#294C29] text-[22px] leading-none">${itemTotalUSD.toFixed(2)}</span>
-                                  <span className="text-[13px] font-black text-[#B43E17] mt-1.5 tracking-tight">Bs. {itemTotalVES.toFixed(2)}</span>
-                                </div>
+                                <div className="bg-[#FDF8F1] px-4 py-2 rounded-xl flex items-center justify-center border border-[#294C29]/5"><span className="font-black text-sm uppercase tracking-widest text-[#294C29]/60">Cant: <span className="text-lg text-[#294C29] ml-1">{detalle.cantidad}</span></span></div>
+                                <div className="flex flex-col items-end"><span className="font-black text-[#294C29] text-[22px] leading-none">${itemTotalUSD.toFixed(2)}</span><span className="text-[13px] font-black text-[#B43E17] mt-1.5 tracking-tight">Bs. {itemTotalVES.toFixed(2)}</span></div>
                               </div>
-
                             </div>
                           );
                         })}
                       </div>
-
                     </div>
                   )}
-                  
                 </div>
               );
             })}
           </div>
         )}
       </div>
-
     </div>
   );
 }
