@@ -44,9 +44,9 @@ export default function ClientesPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // --- NUEVOS ESTADOS PARA EDICIÓN ---
-  const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [newPhone, setNewPhone] = useState("");
+  // --- NUEVOS ESTADOS PARA EDICIÓN DE PERFIL COMPLETO ---
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ nombre: "", cedula: "", telefono: "" });
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -66,36 +66,48 @@ export default function ClientesPage() {
     }
   };
 
-const handleUpdatePhone = async () => {
+  const handleUpdateClient = async () => {
     if (!selectedCliente) return;
+    if (!editForm.nombre.trim() || !editForm.cedula.trim()) {
+      return toast.warning("El nombre y la cédula son obligatorios.");
+    }
+
     setIsSaving(true);
     try {
-      // Le quitamos el ID de la URL y lo pasamos al body
       const res = await fetch(`/api/clientes`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: selectedCliente.id, telefono: newPhone })
+        body: JSON.stringify({ 
+          id: selectedCliente.id, 
+          nombre: editForm.nombre,
+          cedula: editForm.cedula,
+          telefono: editForm.telefono 
+        })
       });
 
       if (!res.ok) throw new Error();
 
-      toast.success("Teléfono actualizado correctamente");
+      toast.success("Perfil actualizado correctamente");
       
-      const clienteActualizado = { ...selectedCliente, telefono: newPhone };
+      const clienteActualizado = { ...selectedCliente, ...editForm };
       setSelectedCliente(clienteActualizado);
       setClientes(prev => prev.map(c => c.id === selectedCliente.id ? clienteActualizado : c));
       
-      setIsEditingPhone(false);
+      setIsEditing(false);
     } catch (error) {
-      toast.error("No se pudo actualizar el teléfono");
+      toast.error("No se pudo actualizar el cliente");
     } finally {
       setIsSaving(false);
     }
   };
 
   const startEditing = () => {
-    setNewPhone(selectedCliente?.telefono || "");
-    setIsEditingPhone(true);
+    setEditForm({
+      nombre: selectedCliente?.nombre || "",
+      cedula: selectedCliente?.cedula || "",
+      telefono: selectedCliente?.telefono || ""
+    });
+    setIsEditing(true);
   };
 
   // --- Lógica de filtrado y paginación original ---
@@ -210,7 +222,7 @@ const handleUpdatePhone = async () => {
                 {currentClientes.map((cliente) => (
                   <div
                     key={cliente.id}
-                    onClick={() => { setSelectedCliente(cliente); setIsEditingPhone(false); }}
+                    onClick={() => { setSelectedCliente(cliente); setIsEditing(false); }}
                     className="bg-white rounded-4xl p-6 border-2 border-[#294C29]/5 hover:border-[#294C29]/20 cursor-pointer transition-all shadow-sm flex flex-col group"
                   >
                     <div className="flex items-start justify-between mb-4">
@@ -269,64 +281,93 @@ const handleUpdatePhone = async () => {
         </div>
       </div>
 
-      {/* PANEL LATERAL (HISTORIAL Y EDICIÓN) */}
+      {/* PANEL LATERAL (HISTORIAL Y EDICIÓN COMPLETA) */}
       <div className={`fixed inset-y-0 right-0 z-50 w-full md:w-112.5 bg-white border-l border-[#294C29]/10 shadow-[text-xl_0_40px_rgba(0,0,0,0.1)] transform transition-transform duration-300 ease-in-out flex flex-col ${selectedCliente ? "translate-x-0" : "translate-x-full"}`}>
         {selectedCliente && (
           <>
             <div className="p-6 md:p-8 border-b border-[#294C29]/10 bg-[#FDF8F1] flex justify-between items-start">
-              <div>
+              <div className="flex-1 w-full mr-4">
                 <div className="w-12 h-12 bg-[#294C29] text-[#F6E4C9] rounded-xl flex items-center justify-center mb-4 shadow-md">
                   <User className="w-6 h-6" />
                 </div>
-                <h2 className="text-2xl font-black text-[#294C29] uppercase tracking-tighter leading-none mb-1">{selectedCliente.nombre}</h2>
-                <div className="flex flex-col gap-2 mt-3">
-                  <span className="text-xs font-bold text-[#B43E17] uppercase tracking-widest">CI: {selectedCliente.cedula}</span>
-                  
-                  {/* SECCIÓN DE TELÉFONO EDITABLE */}
-                  <div className="flex items-center gap-2 group">
-                    <Phone className="w-3.5 h-3.5 text-[#294C29]/40" />
-                    {isEditingPhone ? (
-                      <div className="flex items-center gap-1 animate-in fade-in slide-in-from-left-2 duration-200">
+                
+                {isEditing ? (
+                  <div className="flex flex-col gap-3 animate-in fade-in w-full">
+                    <div>
+                      <label className="text-[10px] font-black text-[#294C29]/50 uppercase tracking-widest ml-1">Nombre</label>
+                      <input 
+                        type="text" 
+                        value={editForm.nombre} 
+                        onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                        className="bg-white border border-[#294C29]/20 rounded-lg px-3 py-2 text-sm font-black text-[#294C29] focus:outline-none focus:border-[#B43E17] w-full uppercase"
+                        placeholder="Nombre Completo"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-black text-[#294C29]/50 uppercase tracking-widest ml-1">Cédula</label>
                         <input 
                           type="text" 
-                          value={newPhone} 
-                          onChange={(e) => setNewPhone(e.target.value.replace(/[a-zA-Z]/g, ""))}
-                          className="bg-white border border-[#294C29]/20 rounded-lg px-3 py-1 text-xs font-bold text-[#294C29] focus:outline-none focus:border-[#B43E17] w-36"
-                          placeholder="0412-1234567"
-                          autoFocus
+                          value={editForm.cedula} 
+                          onChange={(e) => setEditForm({ ...editForm, cedula: e.target.value })}
+                          className="bg-white border border-[#294C29]/20 rounded-lg px-3 py-2 text-xs font-bold text-[#294C29] focus:outline-none focus:border-[#B43E17] w-full uppercase"
+                          placeholder="V-1234567"
                         />
-                        <button 
-                          onClick={handleUpdatePhone} 
-                          disabled={isSaving}
-                          className="p-1.5 bg-[#294C29] text-white rounded-lg hover:bg-[#1B361B] disabled:opacity-50"
-                        >
-                          {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                        </button>
-                        <button 
-                          onClick={() => setIsEditingPhone(false)} 
-                          className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
-                        >
-                          <Ban className="w-3.5 h-3.5" />
-                        </button>
                       </div>
-                    ) : (
+                      <div>
+                        <label className="text-[10px] font-black text-[#294C29]/50 uppercase tracking-widest ml-1">Teléfono</label>
+                        <input 
+                          type="text" 
+                          value={editForm.telefono} 
+                          onChange={(e) => setEditForm({ ...editForm, telefono: e.target.value.replace(/[a-zA-Z]/g, "") })}
+                          className="bg-white border border-[#294C29]/20 rounded-lg px-3 py-2 text-xs font-bold text-[#294C29] focus:outline-none focus:border-[#B43E17] w-full"
+                          placeholder="0412-1234567"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button 
+                        onClick={handleUpdateClient} 
+                        disabled={isSaving}
+                        className="flex-1 py-2.5 bg-[#294C29] text-white rounded-lg hover:bg-[#1B361B] disabled:opacity-50 text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 transition-colors"
+                      >
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Guardar
+                      </button>
+                      <button 
+                        onClick={() => setIsEditing(false)} 
+                        className="p-2.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                        title="Cancelar"
+                      >
+                        <Ban className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-start gap-3">
+                      <h2 className="text-2xl font-black text-[#294C29] uppercase tracking-tighter leading-none mb-1 wrap-break-word">{selectedCliente.nombre}</h2>
+                      <button 
+                        onClick={startEditing}
+                        className="p-1.5 text-[#294C29]/30 hover:text-[#B43E17] transition-colors -mt-1"
+                        title="Editar perfil"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-2 mt-3">
+                      <span className="text-xs font-bold text-[#B43E17] uppercase tracking-widest">CI: {selectedCliente.cedula}</span>
                       <div className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-[#294C29]/40" />
                         <span className="text-xs font-bold text-[#294C29]/60">
                           {selectedCliente.telefono || "Sin teléfono"}
                         </span>
-                        <button 
-                          onClick={startEditing}
-                          className="p-1 text-[#294C29]/30 hover:text-[#B43E17] transition-colors"
-                          title="Editar teléfono"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </button>
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
-              <button onClick={() => setSelectedCliente(null)} className="p-2 bg-white hover:bg-[#EADDCA] text-[#294C29] rounded-full transition-colors shadow-sm">
+              <button onClick={() => setSelectedCliente(null)} className="p-2 bg-white hover:bg-[#EADDCA] text-[#294C29] rounded-full transition-colors shadow-sm shrink-0">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -388,7 +429,7 @@ const handleUpdatePhone = async () => {
       </div>
 
       {selectedCliente && (
-        <div className="fixed inset-0 bg-[#1A301A]/60 z-40 animate-in fade-in duration-300" onClick={() => setSelectedCliente(null)} />
+        <div className="fixed inset-0 bg-[#1A301A]/60 z-40 animate-in fade-in duration-300 xl:hidden" onClick={() => setSelectedCliente(null)} />
       )}
     </div>
   );

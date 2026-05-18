@@ -46,18 +46,21 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ACTUALIZAR CLIENTE (Teléfono)
+// ACTUALIZAR CLIENTE (Nombre, Cédula y Teléfono)
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, telefono } = body;
+    const { id, telefono, nombre, cedula } = body;
+
+    // Preparamos el objeto con los datos a actualizar dinámicamente
+    const dataToUpdate: any = { updatedAt: new Date() };
+    if (telefono !== undefined) dataToUpdate.telefono = telefono || null;
+    if (nombre !== undefined) dataToUpdate.nombre = nombre;
+    if (cedula !== undefined) dataToUpdate.cedula = cedula;
 
     const clienteActualizado = await prisma.cliente.update({
       where: { id: id },
-      data: { 
-        telefono: telefono || null,
-        updatedAt: new Date()
-      }
+      data: dataToUpdate
     });
 
     return NextResponse.json(clienteActualizado, { status: 200 });
