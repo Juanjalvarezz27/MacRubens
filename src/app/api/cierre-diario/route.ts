@@ -1,14 +1,27 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Caracas' });
-    const fechaCaracas = formatter.format(new Date());
-    const inicioDia = new Date(`${fechaCaracas}T00:00:00.000-04:00`);
-    const finDia = new Date(`${fechaCaracas}T23:59:59.999-04:00`);
+    const { searchParams } = request.nextUrl;
+    const desdeParam = searchParams.get("desde");
+    const hastaParam = searchParams.get("hasta");
+
+    // Si se pasan los params usa el rango manual, sino usa el día actual en Caracas
+    let inicioDia: Date;
+    let finDia: Date;
+
+    if (desdeParam && hastaParam) {
+      inicioDia = new Date(desdeParam);
+      finDia = new Date(hastaParam);
+    } else {
+      const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Caracas' });
+      const fechaCaracas = formatter.format(new Date());
+      inicioDia = new Date(`${fechaCaracas}T00:00:00.000-04:00`);
+      finDia = new Date(`${fechaCaracas}T23:59:59.999-04:00`);
+    }
 
     const pedidos = await prisma.pedido.findMany({
       where: {
