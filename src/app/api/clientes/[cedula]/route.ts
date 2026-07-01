@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/src/lib/prisma";
 
 export async function GET(req: Request, { params }: { params: Promise<{ cedula: string }> }) {
   try {

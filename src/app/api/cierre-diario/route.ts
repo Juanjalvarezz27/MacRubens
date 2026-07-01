@@ -1,7 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/src/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,9 +25,20 @@ export async function GET(request: NextRequest) {
       where: {
         createdAt: { gte: inicioDia, lte: finDia },
       },
-      include: {
-        cliente: true,
-        pagos: { include: { metodo: true } }
+      select: {
+        id: true,
+        createdAt: true,
+        estadoPago: true,
+        totalUSD: true,
+        totalVES: true,
+        cliente: { select: { nombre: true } },
+        pagos: {
+          select: {
+            montoUSD: true,
+            montoVES: true,
+            metodo: { select: { nombre: true } }
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     });

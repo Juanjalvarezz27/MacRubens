@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/src/lib/prisma";
 
 // OBTENER ÓRDENES PARA COCINA (Que no estén "Listas")
 export async function GET() {

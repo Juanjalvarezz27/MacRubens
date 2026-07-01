@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/src/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const periodo = searchParams.get("periodo") || "todo";
+    const periodo = searchParams.get("periodo") || "mes";
     const startDateParam = searchParams.get("startDate");
     const endDateParam = searchParams.get("endDate");
 
@@ -43,15 +41,39 @@ export async function GET(req: NextRequest) {
 
     const pedidos = await prisma.pedido.findMany({
       where: Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : undefined,
-      include: {
-        cliente: true,
-        detalles: { 
-          where: { parentDetalleId: null }, // Ignoramos toppings adicionales
-          include: { 
-            producto: { include: { categoria: true } } // 🔥 Traemos la categoría para filtrar
-          } 
+      select: {
+        id: true,
+        createdAt: true,
+        totalUSD: true,
+        totalVES: true,
+        estadoPago: true,
+        clienteId: true,
+        cliente: {
+          select: {
+            nombre: true,
+            cedula: true
+          }
         },
-        pagos: { include: { metodo: true } }
+        detalles: {
+          where: { parentDetalleId: null },
+          select: {
+            cantidad: true,
+            subtotal: true,
+            producto: {
+              select: {
+                nombre: true,
+                categoria: { select: { nombre: true } }
+              }
+            }
+          }
+        },
+        pagos: {
+          select: {
+            montoUSD: true,
+            montoVES: true,
+            metodo: { select: { nombre: true } }
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     });

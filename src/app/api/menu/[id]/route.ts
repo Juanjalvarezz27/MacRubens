@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/src/lib/prisma";
 
 // EDITAR PRODUCTO (PUT)
 // Nota cómo params ahora se tipa como una Promesa

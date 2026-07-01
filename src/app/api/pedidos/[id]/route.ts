@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/src/lib/prisma";
 
 // OBTENER PEDIDO
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {

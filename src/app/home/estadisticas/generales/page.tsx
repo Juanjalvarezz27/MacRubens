@@ -49,7 +49,7 @@ const ITEMS_PER_PAGE = 30;
 export default function EstadisticasGeneralesPage() {
   const [stats, setStats] = useState<GeneralStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [periodo, setPeriodo] = useState<"hoy" | "semana" | "mes" | "ano" | "todo" | "custom">("todo");
+  const [periodo, setPeriodo] = useState<"hoy" | "semana" | "mes" | "ano" | "todo" | "custom">("mes");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const [startDate, setStartDate] = useState("");
@@ -76,7 +76,7 @@ export default function EstadisticasGeneralesPage() {
     }
   }, []);
 
-  useEffect(() => { fetchData("todo"); }, [fetchData]);
+  useEffect(() => { fetchData("mes"); }, [fetchData]);
 
   const handleSelectPeriod = (nuevoPeriodo: any) => {
     setPeriodo(nuevoPeriodo);

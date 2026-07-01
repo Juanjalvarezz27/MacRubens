@@ -1,10 +1,7 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/src/lib/prisma";
 import bcrypt from "bcryptjs";
-
-// Instanciación directa y limpia, tal como en tu sistema de ejemplo
-const prisma = new PrismaClient();
 
 export const authOptions: NextAuthOptions = {
   providers: [
