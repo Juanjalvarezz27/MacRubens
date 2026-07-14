@@ -15,10 +15,37 @@ export async function GET(request: NextRequest) {
       inicioDia = new Date(desdeParam);
       finDia = new Date(hastaParam);
     } else {
-      const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Caracas' });
-      const fechaCaracas = formatter.format(new Date());
-      inicioDia = new Date(`${fechaCaracas}T00:00:00.000-04:00`);
-      finDia = new Date(`${fechaCaracas}T23:59:59.999-04:00`);
+      const parts = new Intl.DateTimeFormat('en-CA', { 
+        timeZone: 'America/Caracas', 
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: 'numeric', hour12: false
+      }).formatToParts(new Date());
+      
+      const p = Object.fromEntries(parts.map(part => [part.type, part.value]));
+      const hour = parseInt(p.hour, 10);
+      
+      // Creamos una fecha neutral en UTC con los valores de Caracas
+      const logicalDate = new Date(Date.UTC(parseInt(p.year), parseInt(p.month) - 1, parseInt(p.day)));
+      
+      if (hour < 5) {
+        logicalDate.setUTCDate(logicalDate.getUTCDate() - 1);
+      }
+      
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const y = logicalDate.getUTCFullYear();
+      const m = pad(logicalDate.getUTCMonth() + 1);
+      const d = pad(logicalDate.getUTCDate());
+      const fechaStr = `${y}-${m}-${d}`;
+
+      inicioDia = new Date(`${fechaStr}T05:00:00.000-04:00`);
+      
+      // Fin del día es a las 4:59:59 del día siguiente calendario (que es el fin lógico)
+      logicalDate.setUTCDate(logicalDate.getUTCDate() + 1);
+      const y2 = logicalDate.getUTCFullYear();
+      const m2 = pad(logicalDate.getUTCMonth() + 1);
+      const d2 = pad(logicalDate.getUTCDate());
+      const fechaStr2 = `${y2}-${m2}-${d2}`;
+      
+      finDia = new Date(`${fechaStr2}T04:59:59.999-04:00`);
     }
 
     const pedidos = await prisma.pedido.findMany({

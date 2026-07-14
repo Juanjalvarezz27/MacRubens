@@ -30,7 +30,13 @@ function toLocalDatetimeValue(date: Date): string {
 
 function getDefaultDesde(): string {
   const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  // Si estamos en la madrugada (antes de las 5 AM), consideramos que el "inicio de jornada"
+  // corresponde al día de ayer a las 5:00 AM.
+  // Si son las 5 AM o más, la jornada inicia hoy a las 5:00 AM.
+  if (hoy.getHours() < 5) {
+    hoy.setDate(hoy.getDate() - 1);
+  }
+  hoy.setHours(5, 0, 0, 0);
   return toLocalDatetimeValue(hoy);
 }
 
